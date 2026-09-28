@@ -1,0 +1,4 @@
+src/app/admin/(protected)/orders/[id]/page.tsx:104: new blank line at EOF.
+src/components/admin-header.tsx:42: new blank line at EOF.
+src/features/orders/order-management.ts:113: new blank line at EOF.
+src/features/orders/order-status-action-form.tsx:98: new blank line at EOF.

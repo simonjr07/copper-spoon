@@ -36,8 +36,9 @@ src/
     cart/                  Browser-persisted guest cart route
     checkout/              Customer checkout route
     order/[orderCode]/     Public bearer-code confirmation route
+    track-order/           Public order-code entry route
     admin/
-      (protected)/         Protected dashboard route group
+      (protected)/         Protected dashboard plus order queue/detail routes
     api/                   Auth.js and explicit HTTP handlers
     layout.tsx
     page.tsx
@@ -93,13 +94,21 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 5. A line identity is the item ID plus sorted group/option IDs. Identical configurations merge quantities, while different choices remain separate lines.
 6. All cart content and totals remain untrusted convenience data. Checkout sends only item/option IDs and quantities; order creation independently re-reads publication, availability, choices, settings, and prices before an order can exist.
 
+### Customer order status
+
+1. `/track-order` normalizes a submitted code to uppercase and redirects only when it matches the public `CS-` format; malformed and unknown codes converge on the same safe not-found experience.
+2. `/order/[orderCode]` is forced dynamic. Each page load calls a dedicated server-only public-order repository directly, without `unstable_cache`, so a normal refresh reads current `Order.status` and `OrderStatusEvent` rows.
+3. The Prisma query allowlists only the public code, lifecycle/payment/fulfilment labels, placed time, immutable item/option snapshots, persisted totals, and event status/time. It never selects contact/address data, internal IDs, staff actors, or notes.
+4. A pure mapper returns a purpose-built customer DTO, orders actual recorded events chronologically, and adds the restaurant timezone from settings. Formatting falls back to UTC if settings contain an invalid timezone.
+5. The page labels pickup and delivery `READY` states honestly and does not imply polling, notifications, live kitchen telemetry, driver dispatch, or an ETA.
+
 ### Staff mutation
 
-1. The protected route verifies a session for early UX redirection.
-2. The mutation independently requires an active user and the necessary role/capability.
-3. Zod parses input; the service checks current state and allowed transition.
-4. The transaction updates the order and appends the status event.
-5. Relevant views/tags are revalidated and the UI receives a safe result.
+1. The protected route verifies a session and `orders:read` permission for early UX redirection and fresh server-only queue/detail reads.
+2. The mutation independently calls `requirePermission("orders:update-status")`, deriving actor ID and role from the current active database user.
+3. Zod parses the order ID, desired status, concurrency timestamp, and bounded optional reason. Inside the transaction the service re-reads the authoritative status and applies the explicit transition/cancellation policy.
+4. A conditional `id + status + updatedAt` update detects a concurrent write. The update and actor-attributed `OrderStatusEvent` are committed together at serializable isolation; either both happen or neither happens.
+5. Admin paths are revalidated and the action returns a safe success, validation, policy, or stale-state message. The public reader remains uncached and never projects event notes/actors.
 
 ## 5. Authentication and authorization
 

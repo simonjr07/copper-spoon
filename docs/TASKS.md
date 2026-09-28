@@ -85,6 +85,8 @@ Depends on: Tasks 2 and 5.
 
 Branch: `feat/order-status`
 
+Status: implemented. `/order/[orderCode]` now performs a fresh dedicated server-side public DTO read and presents current status, restaurant-timezone placed/event times, immutable snapshots/totals, fulfilment-aware guidance, and a chronological timeline containing only stored events. `/track-order` and the public header provide normalized code entry. Invalid and unknown codes share a safe not-found state; no sensitive/internal fields, polling, notifications, tracking, or ETA are exposed.
+
 - Add non-enumerable tracking route, minimal order DTO, timeline/status presentation, refresh strategy, and privacy/rate-limit controls.
 - Test invalid identifiers and data minimization.
 
@@ -93,6 +95,8 @@ Depends on: Task 6.
 ## 8. Restaurant order management
 
 Branch: `feat/order-management`
+
+Status: implemented. `/admin/orders` provides a responsive searchable/filterable/paginated fresh queue and `/admin/orders/[id]` provides complete operational snapshots, contact/fulfilment detail, totals, internal history, and actionable status controls. The explicit role-aware state machine, required cancellation reasons, stale-write protection, and atomic actor-attributed audit events are covered by focused tests. The existing schema supported this without a migration.
 
 - Build order queue/filtering, order detail, authorized status transitions, concurrency conflicts, audit timeline, and actionable states.
 - Finalize cancellation policy and test the state machine.

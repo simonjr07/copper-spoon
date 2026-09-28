@@ -116,42 +116,6 @@ export const prismaOrderRepository: OrderCreationRepository = {
   },
 };
 
-export async function getPublicOrder(publicCode: string) {
-  return prisma.order.findUnique({
-    where: { publicCode },
-    select: {
-      publicCode: true,
-      status: true,
-      fulfilmentType: true,
-      paymentMethod: true,
-      paymentStatus: true,
-      currency: true,
-      subtotalCents: true,
-      deliveryFeeCents: true,
-      totalCents: true,
-      placedAt: true,
-      items: {
-        orderBy: { createdAt: "asc" },
-        select: {
-          itemNameSnapshot: true,
-          unitPriceCentsSnapshot: true,
-          optionsTotalCentsSnapshot: true,
-          quantity: true,
-          lineTotalCents: true,
-          selectedOptions: {
-            orderBy: { createdAt: "asc" },
-            select: {
-              optionGroupNameSnapshot: true,
-              optionNameSnapshot: true,
-              priceAdjustmentCentsSnapshot: true,
-            },
-          },
-        },
-      },
-    },
-  });
-}
-
 export async function getCheckoutSettings() {
   return prisma.restaurantSettings.findUnique({
     where: { id: "restaurant-settings" },

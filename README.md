@@ -1,8 +1,8 @@
 # Copper Spoon
 
-Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It will combine a responsive customer ordering experience with a role-protected restaurant operations dashboard.
+Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It combines a responsive customer ordering experience with a role-protected restaurant operations dashboard.
 
-This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, a browser-persisted guest cart, and authoritative pickup/delivery checkout with fictional order confirmation. Staff operational workflows are scheduled for later feature branches.
+This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, a browser-persisted guest cart, authoritative pickup/delivery checkout and customer tracking, plus the staff order queue and status workflow.
 
 ## Product scope
 
@@ -45,6 +45,10 @@ Open `http://localhost:3000`.
 The public catalog is available at `http://localhost:3000/menu`. It shows only published, non-archived catalog data; published sold-out dishes remain visible with a clear unavailable state.
 
 Available dishes can be configured on their detail pages and added to `http://localhost:3000/cart`. The cart is stored locally in the browser and uses integer-cent estimates. `/checkout` accepts fictional pickup/delivery orders, re-reads the current catalog and restaurant settings, recalculates every amount server-side, and atomically stores immutable order snapshots. Confirmation is available only through the generated non-sequential `CS-…` public code. No real card details or payment processing are used.
+
+Customers can reopen `/order/[orderCode]` or use `/track-order` to fetch the latest recorded status and timeline. The public view uses immutable order snapshots, formats timestamps in the restaurant timezone, and excludes contact details, delivery addresses, internal IDs, staff actors, and notes. It does not promise polling, notifications, live kitchen telemetry, driver tracking, or precise ETAs.
+
+Active `STAFF` and `ADMIN` users can use `/admin/orders` to search and filter the fresh operational queue, inspect contact, fulfilment, snapshots, totals, and internal status history, and advance one state at a time. Staff may cancel only `PENDING` or `CONFIRMED` orders; admins may additionally cancel `PREPARING` orders. Every cancellation requires a reason. `READY`, `COMPLETED`, and `CANCELLED` orders cannot be cancelled.
 
 Customer-facing food imagery is stored locally under `public/images/hero` and `public/images/menu`. The homepage preloads only its above-the-fold hero; menu images use responsive `next/image` sizing and lazy loading. Seeded `MenuItem.imageUrl` values are repository-local `/images/...` paths, and missing or invalid paths render an accessible visual fallback.
 

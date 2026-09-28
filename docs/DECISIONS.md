@@ -112,12 +112,27 @@ This lightweight decision log records choices that materially constrain future w
 - Date: 2026-09-28
 - Decision: Execute settings/catalog reads, authoritative repricing, and nested order/snapshot/event creation in one serializable Prisma transaction. Use a client-generated UUID protected by a nullable unique `Order.checkoutToken`, plus a 50-bit cryptographically random `CS-` public code.
 - Why: The browser cart can be stale or hostile, concurrent catalog changes must not create mixed snapshots, lost responses must be safely retryable, and customers must never receive an internal database identifier.
-- Consequence: Uniqueness and serialization conflicts retry up to four complete transactions. Existing rows can retain a null checkout token. Task 13 still adds request-rate limiting and hosted retention; Task 7 expands the bearer-code route into an order-status experience.
+- Consequence: Uniqueness and serialization conflicts retry up to four complete transactions. Existing rows can retain a null checkout token. Task 13 still adds request-rate limiting and hosted retention; the bearer-code route now provides the customer order-status experience.
+
+## ADR-015: Fresh, minimal bearer-code order status
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Extend `/order/[orderCode]` into confirmation plus durable status rather than creating another order-detail route. Use an uncached server-only Prisma query and an explicit customer DTO; add `/track-order` as a progressive-enhancement code entry point.
+- Why: Customers need current recorded state without accounts, while a separate public model prevents accidental exposure of contact, address, staff, notes, internal IDs, or mutable catalog data.
+- Consequence: Every refresh performs a small indexed order/settings query and shows only real `OrderStatusEvent` rows. Public codes remain bearer credentials. Task 13 must rate-limit lookup attempts; no automatic polling, notifications, driver tracking, or ETA is claimed.
+
+## ADR-016: Explicit order workflow and bounded cancellation
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Normal processing advances exactly one edge through `PENDING → CONFIRMED → PREPARING → READY → COMPLETED`. Staff cancellation ends after `CONFIRMED`; admins may additionally cancel `PREPARING`. No role may cancel `READY` or a terminal order, and every cancellation requires a stored reason.
+- Why: A small explicit state machine is easier to operate, audit, and test than arbitrary status writes. Admin late-stage authority handles exceptional kitchen cases without allowing cancellation after the order is ready.
+- Consequence: The server re-reads current state, uses `updatedAt` only as a stale-screen token, conditionally updates the row, and inserts the actor-attributed event in one serializable transaction. Public DTOs continue to omit internal notes and actors.
 
 ## Pending decisions
 
 | ID | Decision | Needed by |
 | --- | --- | --- |
-| P-004 | Late-stage cancellation authorization | Task 8 |
 | P-005 | Hosted-demo contact retention/redaction | Task 13/15 |
 | P-006 | Monitoring/error-reporting provider | Task 13/15 |

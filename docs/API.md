@@ -21,11 +21,10 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 | --- | --- | --- |
 | `getPublicMenu` (implemented) | Public | Published categories and published/non-archived menu-display items plus safe restaurant display settings |
 | `getPublicMenuItem` (implemented) | Public | One published/non-archived item under a published category, with active groups and available choices |
-| `getPublicOrderConfirmation` (implemented) | Public bearer code | Confirmation-safe order/item/option snapshots and totals by non-sequential public code; no contact/address/internal IDs |
-| `getOrderStatus` | Public bearer link | Minimal order snapshot and status by non-enumerable public ID |
+| `getCustomerOrderStatus` (implemented) | Public bearer code | Fresh status/timeline, placed time, immutable snapshots, and totals by non-sequential public code; no contact/address/internal IDs, staff actors, or notes |
 | `getDashboardSummary` | Admin/Staff | Operational counts and recent orders |
-| `listOrders` | Admin/Staff | Filtered, paginated order summaries |
-| `getOrderDetail` | Admin/Staff | Full order snapshot and status history |
+| `listOrders` (implemented) | Admin/Staff | Fresh searchable, status/fulfilment-filtered, paginated order summaries |
+| `getOrderDetail` (implemented) | Admin/Staff | Full operational snapshot, customer/fulfilment details, totals, and complete internal status history |
 | `getMenuAdmin` | Admin | Categories/items/options including unavailable records |
 | `listStaff` | Admin | Staff metadata without password hashes |
 | `getAnalytics` | Admin | Period aggregates from persisted non-cancelled order totals |
@@ -35,7 +34,7 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 | Action | Authorization | Key behavior |
 | --- | --- | --- |
 | `createOrder` (implemented; rate limit pending) | Public | Validate checkout, resolve idempotency token, reprice, transactionally create snapshots/event |
-| `updateOrderStatus` | Admin/Staff | Check allowed transition and concurrency; append event |
+| `updateOrderStatus` (implemented) | Admin/Staff | Re-read current order, enforce role/status policy and optimistic concurrency, atomically update and append actor-attributed event |
 | `createCategory` / `updateCategory` | Admin | Validate slug/order/active state; revalidate menu |
 | `createMenuItem` / `updateMenuItem` | Admin | Validate price/category/options; revalidate menu |
 | `setMenuItemAvailability` | Admin | Fast sold-out toggle; revalidate public menu |
@@ -86,7 +85,9 @@ Cart actions support add/merge, bounded quantity change, removal, and clear. Thi
 
 ## 7. Status transition contract
 
-The action accepts order ID, desired status, and an expected current status/version. It rejects stale or invalid transitions with `CONFLICT`, rather than overwriting another staff member's update. Successful updates atomically modify the order and append `OrderStatusEvent`.
+The action accepts order ID, desired status, an `updatedAt` concurrency token, and an optional cancellation reason. The token detects a stale screen; the service always re-reads the database status and never trusts a client-supplied current status. Normal processing is exactly `PENDING → CONFIRMED → PREPARING → READY → COMPLETED`, with no skips, reversals, or transitions from terminal states.
+
+`STAFF` may cancel `PENDING` and `CONFIRMED` orders. `ADMIN` may additionally cancel `PREPARING` orders. Neither role may cancel `READY`, `COMPLETED`, or `CANCELLED` orders. A trimmed non-empty reason of at most 500 characters is mandatory. The conditional order update and actor-attributed `OrderStatusEvent` are one serializable transaction; a stale predicate or event failure rolls back the whole operation.
 
 ## 8. Caching and revalidation
 
@@ -98,6 +99,14 @@ The action accepts order ID, desired status, and an expected current status/vers
 Caching policy will use the APIs documented by the installed Next.js version at implementation time.
 
 Implemented public catalog reads use a five-minute `unstable_cache` TTL and the `public-menu` / `restaurant-settings` tags. The future menu/settings mutations invalidate the relevant tag after a successful commit. Public list/detail DTOs contain display fields only and never expose publication flags, sort keys, archive state, timestamps, or other administrative metadata. A published item with `isAvailable=false` remains visible as sold out and is never presented as orderable.
+
+Implemented customer order-status reads are deliberately uncached and run through a separate server-only repository on every `/order/[orderCode]` request. The route is forced dynamic; browser refresh is the initial freshness mechanism. Status mutations revalidate admin routes; no public status cache exists to invalidate.
+
+## 10. Public order-status contract
+
+`/track-order?code=...` trims and uppercases codes, validates the existing `CS-` plus 6–12 alphanumeric format, and redirects to the canonical `/order/[orderCode]` URL. Invalid-format and unknown codes expose the same safe not-found language.
+
+The public DTO includes only public code, current status, fulfilment/payment labels, placed time, restaurant timezone, immutable item/option snapshots, persisted cents totals/currency, and recorded status/time pairs. Timeline notes, staff actor IDs, customer contact/address fields, checkout tokens, internal order IDs, operational timestamps, and current catalog records are excluded.
 
 ## 9. Authentication interfaces
 

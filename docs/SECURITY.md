@@ -50,6 +50,9 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Never collect card numbers/CVV; `DEMO_CARD` is visibly simulated.
 - Public status responses hide unnecessary contact/address fields and use a high-entropy identifier.
 - The implemented confirmation query accepts only a database-format `CS-` bearer code and selects snapshots/status/totals without customer contact, delivery address, internal IDs, staff data, or notes.
+- Public order lookup normalizes only format-valid codes, performs one indexed uncached read, and uses identical not-found language for malformed and unknown values. The dedicated DTO excludes checkout tokens, event notes, staff actors, and mutable catalog records. Codes remain bearer credentials; Task 13 must add rate limiting before hosted launch.
+- Admin order reads require `orders:read`; the update action independently requires an active user with `orders:update-status`. Actor identity/role and the current order status are loaded server-side. Hidden IDs, desired status, timestamps, and cancellation text are treated as untrusted input.
+- Status writes enforce one-edge progression, terminal-state rules, role-specific cancellation limits, bounded mandatory cancellation reasons, and a conditional `updatedAt` predicate. The order row and internal actor-attributed event commit atomically, while the public projection never selects the event note or actor.
 - Logs redact passwords, session/cookie values, connection strings, authorization headers, and customer contact/address data.
 - Define hosted-demo retention and periodic purge/redaction before deployment.
 - Backups, if enabled, inherit the same access/retention expectations.

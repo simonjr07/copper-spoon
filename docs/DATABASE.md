@@ -40,6 +40,8 @@ Unique slug, display content, non-negative `sortOrder`, publish state, timestamp
 
 `MenuItem.imageUrl` stores an optional display path. The current portfolio implementation uses repository-local `/images/menu/*.webp` paths; no asset-management schema or migration is required. Public DTO policy rejects remote, traversal-like, or unsupported paths and returns `null` for the UI fallback.
 
+Task 8 required no schema migration. Existing `Order.status`, `updatedAt`, `completedAt`, and `cancelledAt` columns support the lifecycle and optimistic concurrency, while existing `OrderStatusEvent.fromStatus`, `toStatus`, `changedByUserId`, `note`, and `createdAt` columns provide the operational audit record. Status updates use a serializable transaction and a conditional current-row predicate before inserting the event.
+
 ### `MenuItem`
 
 Category relation, unique slug, display content, `priceCents`, currency, optional image URL, ordering, publication, availability, archive state, timestamps, option groups, and optional historical order-item references.

@@ -28,6 +28,12 @@ export function PublicHeader() {
 
         <nav aria-label="Primary navigation" className="flex items-center gap-2">
           <Link
+            className="rounded-md px-1 py-2 text-sm font-semibold text-ink transition hover:text-copper focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-copper"
+            href="/track-order"
+          >
+            Track
+          </Link>
+          <Link
             className="hidden rounded-full border border-[#3e2920]/15 bg-white/60 px-4 py-2 text-sm font-semibold text-ink transition hover:border-copper hover:text-copper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-copper sm:inline-flex"
             href="/menu"
           >
