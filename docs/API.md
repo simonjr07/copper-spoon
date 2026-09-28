@@ -22,7 +22,7 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 | `getPublicMenu` (implemented) | Public | Published categories and published/non-archived menu-display items plus safe restaurant display settings |
 | `getPublicMenuItem` (implemented) | Public | One published/non-archived item under a published category, with active groups and available choices |
 | `getCustomerOrderStatus` (implemented) | Public bearer code | Fresh status/timeline, placed time, immutable snapshots, and totals by non-sequential public code; no contact/address/internal IDs, staff actors, or notes |
-| `getDashboardSummary` | Admin/Staff | Operational counts and recent orders |
+| `getDashboardSummary` (implemented) | Admin/Staff | Fresh total/today/all-status counts, restaurant-local seven-day activity, recent orders, fulfilment split, and popular immutable item snapshots |
 | `listOrders` (implemented) | Admin/Staff | Fresh searchable, status/fulfilment-filtered, paginated order summaries |
 | `getOrderDetail` (implemented) | Admin/Staff | Full operational snapshot, customer/fulfilment details, totals, and complete internal status history |
 | `getMenuAdmin` (implemented) | Admin/Staff read-only | Fresh categories/items/options including draft, unavailable, inactive, and archived records |
@@ -106,6 +106,8 @@ Implemented public catalog reads use a five-minute `unstable_cache` TTL and the 
 Implemented customer order-status reads are deliberately uncached and run through a separate server-only repository on every `/order/[orderCode]` request. The route is forced dynamic; browser refresh is the initial freshness mechanism. Status mutations revalidate admin routes; no public status cache exists to invalidate.
 
 Implemented admin catalog mutations call `updateTag("public-menu")` only after a successful database write, providing immediate read-your-own-writes behavior for both public list and item-detail caches. They do not invalidate `restaurant-settings`, because catalog changes do not mutate settings.
+
+Implemented dashboard reads are forced dynamic and call a dedicated server-only analytics repository directly. The DTO contains aggregate numbers, display-safe recent-order fields plus prebuilt detail links, timezone/currency display context, and immutable item-snapshot labels. It excludes customer/contact/address data, staff actors, internal order IDs, notes, and mutable catalog records. Popular-item counts exclude cancelled orders; the dashboard does not present payment settlement or revenue analytics.
 
 ## 10. Public order-status contract
 

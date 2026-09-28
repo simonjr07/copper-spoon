@@ -126,6 +126,14 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 4. Self-service in this workflow is deliberately narrow: an admin may edit their own name/email, but cannot change their own role/status or use the admin-driven password-replacement action on themselves.
 5. User queries allowlist identity, role/status, and operational timestamps. `passwordHash` is selected only by credential verification and written only by creation/reset code.
 
+### Operational dashboard analytics
+
+1. `/admin` requires the `analytics:read` capability, which is available to both active `STAFF` and `ADMIN` users, and is forced dynamic so operators do not receive a stale dashboard cache.
+2. A dedicated server-only repository performs bounded aggregate queries for status, today's restaurant-local orders, fulfilment type, recent orders, seven-day activity, and popular items. Independent reads run concurrently and select only fields needed by the dashboard.
+3. The repository converts restaurant-local midnight boundaries to UTC for database filtering. Daily SQL grouping applies the configured IANA timezone before producing `YYYY-MM-DD` keys; invalid timezone settings fall back to UTC.
+4. A pure feature mapper fills absent statuses, fulfilment types, and days with zero; sorts and limits recent orders; and returns a purpose-built DTO with links instead of raw internal IDs.
+5. Popular-item analytics group immutable `OrderItem.itemNameSnapshot` values and sum persisted quantities across non-cancelled orders. They never join mutable menu names or recalculate historical order values.
+
 ## 5. Authentication and authorization
 
 Auth.js v5 credentials authentication verifies bcrypt cost-12 hashes for active users only. It uses encrypted JWT sessions with an eight-hour maximum age and Auth.js-managed secure cookie behavior. The session exposes only safe user identity, role, and status; it never serializes `passwordHash`.

@@ -1,0 +1,2 @@
+export default function LoadingDashboard() { return <main className="mx-auto min-h-screen w-full max-w-7xl animate-pulse px-4 py-8 sm:px-8"><div className="h-20 rounded-2xl bg-line/60" /><div className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div className="h-28 rounded-2xl bg-line/60" key={index} />)}</div><div className="mt-7 h-72 rounded-2xl bg-line/60" /></main>;
+}

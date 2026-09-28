@@ -62,6 +62,8 @@ Generate a unique `AUTH_SECRET` in the ignored `.env` before using staff authent
 
 Active admins can manage fictional staff accounts at `/admin/users`: create active `STAFF` or `ADMIN` accounts, edit safe profile fields, disable/reactivate other users, and replace another user's password. The workflow never returns password hashes, forbids self-disable and self-role changes, and transactionally preserves at least one active administrator.
 
+The protected `/admin` landing page is a fresh operational dashboard for both active staff roles. It summarizes total/today/status counts, seven restaurant-local calendar days, recent orders, pickup versus delivery, and popular historical item snapshots. It intentionally reports order activity rather than payment or revenue analytics.
+
 ## Development admin provisioning
 
 Provision an initial local admin only after the database migration is applied. Supply all values through the current shell; do not add real credentials to `.env.example` or Git.

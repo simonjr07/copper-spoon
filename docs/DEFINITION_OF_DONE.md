@@ -8,6 +8,7 @@ This project is done when the agreed product works end to end, is reviewable and
 - Confirmation and a non-enumerable public status experience accurately reflect the submitted order.
 - Staff can securely sign in, view/process orders, and apply only valid status transitions.
 - Admin can manage catalog, availability, staff, restaurant settings, and basic analytics.
+- Active staff and admins can use a fresh operational dashboard whose status, fulfilment, recent-order, seven-day, and popular-item metrics are timezone-aware, snapshot-safe, empty-state-safe, and free of customer-private fields or misleading revenue claims.
 - Staff management creates only validated normalized accounts, exposes no password hashes, supports confirmed disable/reactivate instead of deletion, blocks self-lockout, and transactionally preserves at least one active administrator.
 - No out-of-scope real payments, customer accounts, marketplace, drivers, loyalty, or reservations have slipped in.
 

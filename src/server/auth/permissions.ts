@@ -3,6 +3,7 @@ import type { UserRole } from "@/generated/prisma/client";
 export const staffPermissions = [
   "orders:read",
   "orders:update-status",
+  "analytics:read",
   "menu:read",
 ] as const;
 
@@ -12,7 +13,6 @@ export const adminPermissions = [
   "categories:write",
   "staff:manage",
   "settings:write",
-  "analytics:read",
 ] as const;
 
 export type Permission = (typeof adminPermissions)[number];

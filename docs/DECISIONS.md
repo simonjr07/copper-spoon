@@ -146,6 +146,14 @@ This lightweight decision log records choices that materially constrain future w
 - Why: History-bearing actor references and operational recovery require durable accounts, while strict self-controls reduce accidental lockout. Serializable isolation prevents concurrent count-then-update write skew.
 - Consequence: Another active admin is required for an admin's demotion, disablement, or controlled password replacement. Self-password recovery remains a separate future operational process. Database serialization conflicts require a fresh review/retry.
 
+## ADR-019: Fresh timezone-aware operational analytics
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Render `/admin` from uncached, server-only aggregate queries available to both active staff roles. Define "today" and seven-day buckets in the restaurant's configured IANA timezone, and compute popular items from immutable order-item name snapshots while excluding cancelled orders.
+- Why: Restaurant operators need current workload and fulfilment signals, calendar days must match the restaurant rather than the server, and historical item reporting must survive catalog renames or archival.
+- Consequence: Each dashboard request performs bounded concurrent aggregates and a small recent-order query. Missing statuses/days become explicit zeroes, invalid timezone settings fall back to UTC, private order fields never enter the dashboard DTO, and no metric is described as settled revenue or payment performance.
+
 ## Pending decisions
 
 | ID | Decision | Needed by |

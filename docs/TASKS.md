@@ -133,6 +133,8 @@ Branch: `feat/settings-analytics`
 - Add basic period/order/status aggregates using persisted order values and documented cancellation policy.
 - Test timezone and boundary calculations.
 
+Status: dashboard analytics implemented. `/admin` now gives active staff and admins fresh operational counts, all-status distribution, restaurant-local seven-day activity, recent order links, fulfilment split, and immutable-snapshot popular items through a dedicated server-only repository and minimal DTO. Restaurant-settings editing remains separate work within this roadmap item.
+
 Depends on: Tasks 8–10.
 
 ## 12. Frontend polish and responsive UX
