@@ -1,0 +1,242 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum FulfilmentType {
+  PICKUP
+  DELIVERY
+}
+
+enum PaymentMethod {
+  PAY_ON_PICKUP
+  PAY_ON_DELIVERY
+  DEMO_CARD
+}
+
+enum PaymentStatus {
+  UNPAID
+  SIMULATED
+  SETTLED
+}
+
+enum OptionSelectionType {
+  SINGLE
+  MULTIPLE
+}
+
+model User {
+  id           String             @id @default(cuid())
+  email        String             @unique @db.VarChar(254)
+  name         String             @db.VarChar(120)
+  passwordHash String             @db.VarChar(255)
+  role         UserRole           @default(STAFF)
+  status       UserStatus         @default(ACTIVE)
+  lastLoginAt  DateTime?          @db.Timestamptz(3)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @db.Timestamptz(3)
+  statusEvents OrderStatusEvent[] @relation("OrderStatusChangedBy")
+
+  @@index([status, role])
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  slug        String     @unique @db.VarChar(100)
+  name        String     @db.VarChar(100)
+  description String?    @db.VarChar(500)
+  sortOrder   Int        @default(0)
+  isPublished Boolean    @default(false)
+  createdAt   DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(3)
+  menuItems   MenuItem[]
+
+  @@index([isPublished, sortOrder])
+}
+
+model MenuItem {
+  id           String                @id @default(cuid())
+  categoryId   String
+  slug         String                @unique @db.VarChar(120)
+  name         String                @db.VarChar(120)
+  description  String                @db.VarChar(1000)
+  priceCents   Int
+  currency     String                @default("USD") @db.Char(3)
+  imageUrl     String?               @db.VarChar(2048)
+  sortOrder    Int                   @default(0)
+  isPublished  Boolean               @default(false)
+  isAvailable  Boolean               @default(true)
+  isArchived   Boolean               @default(false)
+  createdAt    DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime              @updatedAt @db.Timestamptz(3)
+  category     Category              @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  optionGroups MenuItemOptionGroup[]
+  orderItems   OrderItem[]
+
+  @@index([categoryId, isPublished, isAvailable, sortOrder])
+  @@index([isArchived])
+}
+
+model MenuItemOptionGroup {
+  id            String              @id @default(cuid())
+  menuItemId    String
+  name          String              @db.VarChar(120)
+  selectionType OptionSelectionType
+  minSelections Int                 @default(0)
+  maxSelections Int                 @default(1)
+  sortOrder     Int                 @default(0)
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime            @updatedAt @db.Timestamptz(3)
+  menuItem      MenuItem            @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  options       MenuItemOption[]
+
+  @@unique([menuItemId, name])
+  @@index([menuItemId, isActive, sortOrder])
+}
+
+model MenuItemOption {
+  id                   String              @id @default(cuid())
+  optionGroupId        String
+  name                 String              @db.VarChar(120)
+  priceAdjustmentCents Int                 @default(0)
+  sortOrder            Int                 @default(0)
+  isAvailable          Boolean             @default(true)
+  createdAt            DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime            @updatedAt @db.Timestamptz(3)
+  optionGroup          MenuItemOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  orderItemOptions     OrderItemOption[]
+
+  @@unique([optionGroupId, name])
+  @@index([optionGroupId, isAvailable, sortOrder])
+}
+
+model Order {
+  id                   String             @id @default(cuid())
+  publicCode           String             @unique @db.VarChar(16)
+  status               OrderStatus        @default(PENDING)
+  fulfilmentType       FulfilmentType
+  paymentMethod        PaymentMethod
+  paymentStatus        PaymentStatus      @default(UNPAID)
+  customerName         String             @db.VarChar(120)
+  customerEmail        String             @db.VarChar(254)
+  customerPhone        String             @db.VarChar(40)
+  deliveryAddressLine1 String?            @db.VarChar(200)
+  deliveryAddressLine2 String?            @db.VarChar(200)
+  deliveryCity         String?            @db.VarChar(120)
+  deliveryRegion       String?            @db.VarChar(120)
+  deliveryPostalCode   String?            @db.VarChar(32)
+  deliveryCountry      String?            @db.Char(2)
+  customerNote         String?            @db.VarChar(1000)
+  currency             String             @default("USD") @db.Char(3)
+  subtotalCents        Int
+  deliveryFeeCents     Int                @default(0)
+  totalCents           Int
+  placedAt             DateTime           @default(now()) @db.Timestamptz(3)
+  completedAt          DateTime?          @db.Timestamptz(3)
+  cancelledAt          DateTime?          @db.Timestamptz(3)
+  createdAt            DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime           @updatedAt @db.Timestamptz(3)
+  items                OrderItem[]
+  statusEvents         OrderStatusEvent[]
+
+  @@index([status, placedAt(sort: Desc)])
+  @@index([placedAt(sort: Desc)])
+}
+
+model OrderItem {
+  id                        String            @id @default(cuid())
+  orderId                   String
+  menuItemId                String?
+  itemNameSnapshot          String            @db.VarChar(120)
+  unitPriceCentsSnapshot    Int
+  quantity                  Int
+  optionsTotalCentsSnapshot Int               @default(0)
+  lineTotalCents            Int
+  customerNote              String?           @db.VarChar(500)
+  createdAt                 DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt                 DateTime          @updatedAt @db.Timestamptz(3)
+  order                     Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem                  MenuItem?         @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  selectedOptions           OrderItemOption[]
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
+
+model OrderItemOption {
+  id                           String          @id @default(cuid())
+  orderItemId                  String
+  menuItemOptionId             String?
+  optionGroupNameSnapshot      String          @db.VarChar(120)
+  optionNameSnapshot           String          @db.VarChar(120)
+  priceAdjustmentCentsSnapshot Int
+  createdAt                    DateTime        @default(now()) @db.Timestamptz(3)
+  orderItem                    OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  menuItemOption               MenuItemOption? @relation(fields: [menuItemOptionId], references: [id], onDelete: SetNull)
+
+  @@index([orderItemId])
+  @@index([menuItemOptionId])
+}
+
+model OrderStatusEvent {
+  id              String       @id @default(cuid())
+  orderId         String
+  fromStatus      OrderStatus?
+  toStatus        OrderStatus
+  changedByUserId String?
+  note            String?      @db.VarChar(500)
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy       User?        @relation("OrderStatusChangedBy", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, createdAt])
+  @@index([changedByUserId])
+}
+
+model RestaurantSettings {
+  id                        String   @id @db.VarChar(32)
+  restaurantName            String   @db.VarChar(120)
+  contactEmail              String?  @db.VarChar(254)
+  contactPhone              String?  @db.VarChar(40)
+  addressLine1              String?  @db.VarChar(200)
+  addressLine2              String?  @db.VarChar(200)
+  city                      String?  @db.VarChar(120)
+  region                    String?  @db.VarChar(120)
+  postalCode                String?  @db.VarChar(32)
+  country                   String?  @db.Char(2)
+  currency                  String   @default("USD") @db.Char(3)
+  timezone                  String   @default("America/New_York") @db.VarChar(64)
+  pickupEnabled             Boolean  @default(true)
+  deliveryEnabled           Boolean  @default(true)
+  payOnPickupEnabled        Boolean  @default(true)
+  payOnDeliveryEnabled      Boolean  @default(true)
+  demoCardEnabled           Boolean  @default(true)
+  deliveryFeeCents          Int      @default(0)
+  minimumDeliveryOrderCents Int?
+  createdAt                 DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt                 DateTime @updatedAt @db.Timestamptz(3)
+}
