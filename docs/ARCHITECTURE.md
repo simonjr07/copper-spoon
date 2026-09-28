@@ -32,9 +32,13 @@ The implemented database boundary uses stable Prisma ORM 7.10, `@prisma/adapter-
 ```text
 src/
   app/
-    (public)/              Public route group (introduced with public features)
+    menu/                  Public catalog list/detail routes
+    cart/                  Browser-persisted guest cart route
+    checkout/              Customer checkout route
+    order/[orderCode]/     Public bearer-code confirmation route
+    track-order/           Public order-code entry route
     admin/
-      (protected)/         Protected dashboard route group
+      (protected)/         Protected dashboard, order workflow, and catalog management
     api/                   Auth.js and explicit HTTP handlers
     layout.tsx
     page.tsx
@@ -64,27 +68,55 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 
 ### Public menu read
 
-1. A Server Component calls a server-only menu query.
-2. The query returns an intentionally selected DTO, not an unrestricted model object.
-3. Cache policy/tag is explicit so admin availability edits can invalidate the menu.
-4. Only serializable, public fields cross a Client Component boundary.
+1. `/menu` and `/menu/[slug]` Server Components call the server-only public catalog module.
+2. Prisma selects only catalog/settings fields; a pure policy layer applies publication/archive checks and returns purpose-built DTOs.
+3. `unstable_cache` caches catalog reads for five minutes under `public-menu` and `restaurant-settings` tags. Task 9 mutations will revalidate those tags after commit.
+4. The list page passes only its public DTO to the narrow `MenuBrowser` Client Component for live search and category filtering. Item-detail reads and rendering remain server-side.
+5. Published unavailable items remain visible as sold out; unpublished/archived items, unpublished categories, inactive option groups, and unavailable choices are omitted.
+6. Public image paths are allowlisted to repository-local `/images/...` assets before crossing the server/client boundary. `MenuVisual` uses responsive `next/image` fill/sizes and switches to the branded fallback after a missing path or load error.
 
 ### Order creation
 
 1. Checkout submits a typed payload to a Server Action.
 2. Zod validates shape and conditional fulfilment/payment rules.
-3. The service loads active menu items/options and recalculates all prices.
-4. A PostgreSQL transaction creates the order, item snapshots, option snapshots, and initial status event.
-5. The service returns a safe result with order number and public tracking identifier.
-6. The action clears/updates client cart state and redirects to confirmation.
+3. A serializable PostgreSQL transaction first resolves the unique checkout token, then loads current restaurant settings and complete item/group/option records.
+4. Pure domain logic rejects disabled fulfilment/payment choices; unpublished, archived, sold-out, or hidden-category items; inactive/unavailable/wrong-item options; selection-bound violations; currency mismatches; and unmet delivery minimums.
+5. The service recalculates base, option, line, subtotal, delivery-fee, and total cents and creates the order, immutable item/option snapshots, and initial `PENDING` event through one nested write.
+6. A cryptographically random `CS-` code is retried on a uniqueness collision. A repeated checkout token returns the already-created public code rather than creating a duplicate order.
+7. The Client Component clears the browser cart only after success and navigates to a dynamic confirmation route that selects no contact/address/internal-ID fields.
+
+### Guest cart
+
+1. The server-rendered item detail passes its purpose-built public DTO to a narrow configurator Client Component.
+2. The configurator enforces currently rendered group types and min/max selection bounds, then snapshots only display data and integer-cent estimates into a cart line.
+3. A root React context/reducer owns cart actions so the header, detail configurator, and `/cart` route share state without a separate client store dependency.
+4. After client hydration, a versioned strict Zod schema restores `localStorage` data. Invalid, mixed-currency, unsafe-image, or unknown-version payloads fail closed to an empty cart; storage failures leave the in-memory cart usable.
+5. A line identity is the item ID plus sorted group/option IDs. Identical configurations merge quantities, while different choices remain separate lines.
+6. All cart content and totals remain untrusted convenience data. Checkout sends only item/option IDs and quantities; order creation independently re-reads publication, availability, choices, settings, and prices before an order can exist.
+
+### Customer order status
+
+1. `/track-order` normalizes a submitted code to uppercase and redirects only when it matches the public `CS-` format; malformed and unknown codes converge on the same safe not-found experience.
+2. `/order/[orderCode]` is forced dynamic. Each page load calls a dedicated server-only public-order repository directly, without `unstable_cache`, so a normal refresh reads current `Order.status` and `OrderStatusEvent` rows.
+3. The Prisma query allowlists only the public code, lifecycle/payment/fulfilment labels, placed time, immutable item/option snapshots, persisted totals, and event status/time. It never selects contact/address data, internal IDs, staff actors, or notes.
+4. A pure mapper returns a purpose-built customer DTO, orders actual recorded events chronologically, and adds the restaurant timezone from settings. Formatting falls back to UTC if settings contain an invalid timezone.
+5. The page labels pickup and delivery `READY` states honestly and does not imply polling, notifications, live kitchen telemetry, driver dispatch, or an ETA.
 
 ### Staff mutation
 
-1. The protected route verifies a session for early UX redirection.
-2. The mutation independently requires an active user and the necessary role/capability.
-3. Zod parses input; the service checks current state and allowed transition.
-4. The transaction updates the order and appends the status event.
-5. Relevant views/tags are revalidated and the UI receives a safe result.
+1. The protected route verifies a session and `orders:read` permission for early UX redirection and fresh server-only queue/detail reads.
+2. The mutation independently calls `requirePermission("orders:update-status")`, deriving actor ID and role from the current active database user.
+3. Zod parses the order ID, desired status, concurrency timestamp, and bounded optional reason. Inside the transaction the service re-reads the authoritative status and applies the explicit transition/cancellation policy.
+4. A conditional `id + status + updatedAt` update detects a concurrent write. The update and actor-attributed `OrderStatusEvent` are committed together at serializable isolation; either both happen or neither happens.
+5. Admin paths are revalidated and the action returns a safe success, validation, policy, or stale-state message. The public reader remains uncached and never projects event notes/actors.
+
+### Admin catalog mutation
+
+1. `/admin/menu` requires `menu:read`, giving staff a fresh read-only overview. Category/item edit routes and every action independently require `categories:write` or `menu:write`, which are admin-only capabilities.
+2. Zod normalizes slugs, parses booleans/order fields, converts strict decimal text directly to integer cents, and allowlists repository-local image paths. Database unique/relationship failures are mapped to safe domain messages.
+3. The server-only admin catalog repository verifies item/group/option ownership and prevents active selection bounds from exceeding currently available choices. Categories are unpublished rather than deleted; item archive atomically sets archived and unpublished.
+4. Successful writes immediately expire only the `public-menu` tag and revalidate the relevant admin route. Failed writes never invalidate the cache. Public catalog policy continues to hide unpublished categories/items and archived items while retaining published unavailable items as sold out.
+5. Catalog tables and order snapshot tables are never updated together. Existing `OrderItem` and `OrderItemOption` snapshot names/prices therefore remain immutable when current catalog data changes.
 
 ## 5. Authentication and authorization
 
@@ -120,7 +152,8 @@ Operational events worth observing include login failures, denied authorization,
 
 - Stream route sections when it improves meaningful rendering; avoid client waterfalls.
 - Query only required columns and index frequent filters.
-- Optimize food imagery through `next/image` once assets exist.
+- Repository-local WebP food imagery is delivered through `next/image` with fixed-ratio containers to prevent layout shift. Only the homepage hero is preloaded; menu-card and detail images retain lazy loading.
+- Generated source PNGs remain outside the repository. The selected, optimized WebP derivatives and reproducible prompt/mapping notes are the maintained application assets.
 - Keep cart interactions local and responsive, with server reconciliation at checkout.
 - Build semantic HTML first and test keyboard, screen-reader naming, focus behavior, contrast, responsive layout, and reduced motion.
 

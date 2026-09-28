@@ -50,9 +50,17 @@ Branch: `feat/public-menu`
 
 Depends on: Task 2.
 
+Status: implemented. `/menu` and `/menu/[slug]` use server-only cached Prisma reads, explicit public DTOs/publication policy, responsive search and category filtering, informational options, sold-out/empty/loading/not-found states, metadata, and focused catalog/money tests. Task 4B establishes the final image structure; Task 12 may refine presentation.
+
+### 4B. Food imagery and public visual identity
+
+Status: implemented. The homepage, menu cards, and detail route now use a cohesive repository-local WebP food-photography set through responsive `next/image`, safe public image-path DTOs, and a resilient branded fallback. Seed paths are idempotent; the existing schema required no migration. Task 12 may refine art direction but no longer needs to establish the image contract.
+
 ## 5. Cart
 
 Branch: `feat/cart`
+
+Status: implemented. Available item details enforce active option-group selection bounds before adding a configuration. A versioned, schema-validated browser cart supports distinct configurations, quantity changes, removal, responsive item imagery, integer-cent line/subtotal estimates, an accessible global count, and empty/loading states. Checkout re-reads the catalog before persisting an order.
 
 - Implement item customization rules, cart add/edit/remove, quantity controls, persisted local cart, money utilities, and accessible feedback.
 - Treat displayed client totals as estimates pending checkout revalidation.
@@ -63,6 +71,8 @@ Depends on: Task 4.
 ## 6. Checkout and order creation
 
 Branch: `feat/checkout`
+
+Status: implemented. `/checkout` validates contact/fulfilment/address/demo-payment input, uses unique checkout tokens for retry idempotency, and performs server-authoritative catalog/settings validation and integer-cent repricing inside a serializable transaction. The nested write creates immutable item/option snapshots plus the initial `PENDING` event. `/order/[orderCode]` returns a confirmation-safe DTO by a high-entropy public code; no real payment or card data is collected.
 
 - Build contact, fulfilment, address, note, and simulated-payment forms.
 - Add Zod validation, server repricing, idempotency protection, atomic snapshot creation, and confirmation.
@@ -75,6 +85,8 @@ Depends on: Tasks 2 and 5.
 
 Branch: `feat/order-status`
 
+Status: implemented. `/order/[orderCode]` now performs a fresh dedicated server-side public DTO read and presents current status, restaurant-timezone placed/event times, immutable snapshots/totals, fulfilment-aware guidance, and a chronological timeline containing only stored events. `/track-order` and the public header provide normalized code entry. Invalid and unknown codes share a safe not-found state; no sensitive/internal fields, polling, notifications, tracking, or ETA are exposed.
+
 - Add non-enumerable tracking route, minimal order DTO, timeline/status presentation, refresh strategy, and privacy/rate-limit controls.
 - Test invalid identifiers and data minimization.
 
@@ -84,6 +96,8 @@ Depends on: Task 6.
 
 Branch: `feat/order-management`
 
+Status: implemented. `/admin/orders` provides a responsive searchable/filterable/paginated fresh queue and `/admin/orders/[id]` provides complete operational snapshots, contact/fulfilment detail, totals, internal history, and actionable status controls. The explicit role-aware state machine, required cancellation reasons, stale-write protection, and atomic actor-attributed audit events are covered by focused tests. The existing schema supported this without a migration.
+
 - Build order queue/filtering, order detail, authorized status transitions, concurrency conflicts, audit timeline, and actionable states.
 - Finalize cancellation policy and test the state machine.
 
@@ -92,6 +106,8 @@ Depends on: Tasks 3 and 6.
 ## 9. Menu and category management
 
 Branch: `feat/menu-management`
+
+Status: implemented. Staff have a fresh read-only catalog overview; admins can create/edit categories and menu items, manage publication/availability/archive/order, and create/edit option groups and options. Strict cents/image/slug/relationship/bounds validation, safe conflict errors, targeted immediate `public-menu` cache expiry, and snapshot isolation are covered by focused tests. No schema migration was required.
 
 - Build admin category/item/option CRUD, ordering, validation, archive behavior, and fast availability controls.
 - Connect cache revalidation and verify historical orders remain unchanged.

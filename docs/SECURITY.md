@@ -7,6 +7,7 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 ## 2. Trust boundaries
 
 - Browser data is untrusted, including hidden fields, totals, role/status values, IDs, and cart content.
+- The versioned local cart schema limits and sanitizes browser persistence for resilient rendering only; it does not make stored item/option IDs, availability, names, prices, or totals authoritative.
 - Server Actions and Route Handlers are network-reachable boundaries, even when only referenced by protected UI.
 - Sessions prove identity but sensitive operations also confirm active account state and authorization.
 - Database values rendered into HTML still require safe framework rendering and intentional DTO selection.
@@ -39,7 +40,8 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Reprice orders from database records and use a transaction for order/items/options/events.
 - Use Prisma parameterization; raw SQL requires a documented need and parameter binding.
 - Limit quantities, note lengths, item counts, and request sizes to control abuse.
-- Add idempotency/replay protection to checkout and optimistic concurrency to status updates.
+- Maintain checkout idempotency/replay protection and add optimistic concurrency to status updates.
+- Checkout now uses a unique UUID submission token, bounded cart identifiers/quantities, current-record validation, server-only repricing, and a serializable transaction. Task 13 still adds request-rate limiting.
 - Enforce state-machine transitions server-side.
 
 ## 6. Data protection
@@ -47,6 +49,12 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Collect only name, email, phone, necessary delivery address, fulfilment details, and an optional note.
 - Never collect card numbers/CVV; `DEMO_CARD` is visibly simulated.
 - Public status responses hide unnecessary contact/address fields and use a high-entropy identifier.
+- The implemented confirmation query accepts only a database-format `CS-` bearer code and selects snapshots/status/totals without customer contact, delivery address, internal IDs, staff data, or notes.
+- Public order lookup normalizes only format-valid codes, performs one indexed uncached read, and uses identical not-found language for malformed and unknown values. The dedicated DTO excludes checkout tokens, event notes, staff actors, and mutable catalog records. Codes remain bearer credentials; Task 13 must add rate limiting before hosted launch.
+- Admin order reads require `orders:read`; the update action independently requires an active user with `orders:update-status`. Actor identity/role and the current order status are loaded server-side. Hidden IDs, desired status, timestamps, and cancellation text are treated as untrusted input.
+- Status writes enforce one-edge progression, terminal-state rules, role-specific cancellation limits, bounded mandatory cancellation reasons, and a conditional `updatedAt` predicate. The order row and internal actor-attributed event commit atomically, while the public projection never selects the event note or actor.
+- Catalog overview reads require `menu:read`; category and menu/option mutations independently require admin-only `categories:write` or `menu:write`. Direct Server Action calls by staff are denied even when write controls are absent from their UI.
+- Catalog actions validate all identifiers and relationships server-side, normalize unique slugs, parse decimal money without floating-point persistence, allow only safe `/images/...` asset paths, and map Prisma uniqueness/relationship failures to non-diagnostic messages. Archive is non-destructive and cannot modify order snapshots.
 - Logs redact passwords, session/cookie values, connection strings, authorization headers, and customer contact/address data.
 - Define hosted-demo retention and periodic purge/redaction before deployment.
 - Backups, if enabled, inherit the same access/retention expectations.

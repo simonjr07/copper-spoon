@@ -1,4 +1,6 @@
-import { logoutAction } from "@/features/auth/actions";
+import Link from "next/link";
+
+import { AdminHeader } from "@/components/admin-header";
 import { roleHasPermission } from "@/server/auth/permissions";
 import { requireActiveUserForPage } from "@/server/auth/authorization";
 
@@ -8,39 +10,30 @@ export default async function AdminDashboardPage() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-16">
-      <header className="flex flex-col gap-6 border-b border-line pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <AdminHeader user={user} />
+      <header className="pt-8">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-copper">
-            Copper Spoon
-          </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-[-0.04em] text-ink">
             Restaurant workspace
           </h1>
-          <p className="mt-2 text-muted">
-            Signed in as {user.name} · {user.role}
-          </p>
         </div>
-        <form action={logoutAction}>
-          <button
-            className="rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition hover:border-copper hover:text-copper"
-            type="submit"
-          >
-            Sign out
-          </button>
-        </form>
       </header>
 
       <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <WorkspaceCard
-          description="Review incoming orders and move them through preparation."
-          label="Orders"
-          status="Planned"
-        />
-        <WorkspaceCard
-          description="View the current menu and item availability."
-          label="Menu"
-          status="Planned"
-        />
+        <Link href="/admin/orders">
+          <WorkspaceCard
+            description="Review incoming orders and move them through preparation."
+            label="Orders"
+            status="Active"
+          />
+        </Link>
+        <Link href="/admin/menu">
+          <WorkspaceCard
+            description="View the catalog and manage publication and availability."
+            label="Menu"
+            status="Active"
+          />
+        </Link>
         {canManageStaff ? (
           <WorkspaceCard
             description="Admin-only staff account management foundation."

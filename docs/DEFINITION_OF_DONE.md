@@ -30,6 +30,13 @@ This project is done when the agreed product works end to end, is reviewable and
 
 ## User experience
 
+- Public menu list/detail routes expose only published catalog content, preserve configured order, distinguish sold-out items without implying orderability, and handle search/no-data/not-found states.
+- Public food imagery is repository-local, web-optimized, responsive, meaningfully described, visually cohesive, stable during loading, and resilient to missing assets.
+- The guest cart distinguishes item configurations, enforces visible option bounds, persists safely in the browser, exposes accessible quantity/removal controls, and clearly labels totals as estimates pending checkout revalidation.
+- Checkout conditionally validates pickup/delivery and demo payment input, ignores browser prices, reprices current catalog/settings data in one idempotent transaction, persists immutable snapshots plus the initial event, and confirms through a non-sequential public code without exposing private/internal fields.
+- Customer order status reloads fresh recorded state by bearer code, exposes only a purpose-built snapshot/timeline DTO, handles invalid/unknown codes uniformly, uses fulfilment-honest accessible messaging, and does not imply unimplemented telemetry or delivery tracking.
+- Restaurant staff can search/filter a fresh responsive order queue, inspect complete operational snapshots/history, advance only one valid lifecycle edge, receive safe stale-state feedback, and cancel only within the documented role window with a required internal reason.
+- Staff can inspect the current catalog read-only; admins can manage category/item/option lifecycle, ordering, exact prices, and safe local imagery. Successful writes immediately refresh public catalog data, destructive relationship deletion is avoided, and historical order snapshots remain unchanged.
 - Critical public flow works from 320 px mobile through desktop; dashboard is usable at its target breakpoints.
 - Semantic structure, keyboard access, focus management, names/labels, errors, contrast, and reduced motion pass review.
 - Loading, empty, success, stale/conflict, and unexpected-error states are intentional.

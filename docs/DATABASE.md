@@ -38,6 +38,12 @@ Credentials and staff authorization: normalized unique email, name, bcrypt-ready
 
 Unique slug, display content, non-negative `sortOrder`, publish state, timestamps, and one-to-many menu items.
 
+`MenuItem.imageUrl` stores an optional display path. The current portfolio implementation uses repository-local `/images/menu/*.webp` paths; no asset-management schema or migration is required. Public DTO policy rejects remote, traversal-like, or unsupported paths and returns `null` for the UI fallback.
+
+Task 8 required no schema migration. Existing `Order.status`, `updatedAt`, `completedAt`, and `cancelledAt` columns support the lifecycle and optimistic concurrency, while existing `OrderStatusEvent.fromStatus`, `toStatus`, `changedByUserId`, `note`, and `createdAt` columns provide the operational audit record. Status updates use a serializable transaction and a conditional current-row predicate before inserting the event.
+
+Task 9 also required no migration. Existing category/item/group/option publication, availability, archive, ordering, selection-bound, unique-slug/name, and restrictive relationship fields support the admin catalog workflow. Category deletion is not exposed; unpublishing is the safe removal mechanism. Item archive sets `isArchived=true` and `isPublished=false`. Order snapshots live on separate order-owned rows and are never updated by catalog mutations.
+
 ### `MenuItem`
 
 Category relation, unique slug, display content, `priceCents`, currency, optional image URL, ordering, publication, availability, archive state, timestamps, option groups, and optional historical order-item references.
@@ -54,10 +60,11 @@ Belongs to an option group and contains a name, non-negative price adjustment in
 
 ### `Order`
 
-Contains internal ID, unique `publicCode`, lifecycle/payment/fulfilment state, customer contact, snapshotted delivery address, customer note, currency, subtotal/delivery/total cents, operational timestamps, items, and status events.
+Contains internal ID, nullable unique `checkoutToken`, unique `publicCode`, lifecycle/payment/fulfilment state, customer contact, snapshotted delivery address, customer note, currency, subtotal/delivery/total cents, operational timestamps, items, and status events. New checkout orders use a UUID checkout token for retry idempotency; null preserves compatibility with earlier/administratively-created rows.
 
 Database checks require:
 
+- a version-4 UUID shape when `checkoutToken` is present;
 - normalized customer email;
 - a complete line 1/city/postal code/country snapshot for delivery;
 - pay-on-pickup only with pickup and pay-on-delivery only with delivery;
@@ -112,15 +119,17 @@ Historical display and analytics must never join current catalog pricing to reca
 
 ## 7. Transactional order creation contract
 
-The later checkout service will, in one database transaction:
+The implemented checkout service performs, in one serializable database transaction:
 
-1. Load and validate current settings, published/available items, and valid options.
-2. Calculate all cents values on the server.
-3. Generate and reserve a unique non-sequential public code.
-4. Create the order and immutable item/option snapshots.
-5. Create the initial `PENDING` status event.
+1. Resolve an existing unique checkout token for idempotent retries.
+2. Load and validate current settings, published/available items, and valid options.
+3. Calculate all cents values on the server, including the current settings delivery fee.
+4. Generate and reserve a cryptographically random non-sequential public code, retrying uniqueness/serialization conflicts.
+5. Create the order, immutable item/option snapshots, and initial `PENDING` status event through one nested write.
 
 Stale or unavailable cart data rejects the whole operation. Client-provided prices/totals are ignored.
+
+Migration `20260928000000_order_checkout_idempotency` adds only the nullable checkout token, its UUID-format check, and unique index. No catalog or historical-order data is rewritten.
 
 ## 8. Indexes
 
@@ -149,7 +158,7 @@ The Compose mapping is `127.0.0.1:5433` on the host to PostgreSQL port `5432` in
 - The initial migration includes foreign keys, indexes, enum types, and custom PostgreSQL checks not expressible in the Prisma schema.
 - Every later schema change includes a reviewed migration and corresponding tests/docs.
 - Seed execution is explicit in Prisma 7 (`npm run db:seed`); migration commands do not seed automatically.
-- The seed is idempotent for its known slugs/names and creates only fictional restaurant settings, three categories, four menu items, and options. It never creates a staff user or credential.
+- The seed is idempotent for its known slugs/names and creates only fictional restaurant settings, five categories, seven menu items, local WebP image paths, and representative options. One published dessert is deliberately sold out to exercise the public availability state. It never creates a staff user or credential.
 - Generated Prisma Client is excluded from Git and recreated by `postinstall`/`db:generate`.
 
 ## 11. Integration testing direction

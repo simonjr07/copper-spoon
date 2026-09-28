@@ -18,13 +18,19 @@ Tests should protect money calculations, snapshot history, order transactions, s
 - Money arithmetic and formatting
 - Cart reducer/quantity behavior
 - Option selection constraints
+- Cart configuration identity, integer-cent line/subtotal arithmetic, sold-out rejection, and versioned persistence sanitization
 - Zod schemas and conditional checkout rules
+- Authoritative checkout publication/availability/currency checks, option membership/bounds, delivery minimum/fee, payment compatibility, snapshot immutability, initial status event, idempotent retry, public-code format/collision retry, and transaction orchestration
+- Customer order-code normalization, safe DTO projection, immutable snapshot presentation, chronological real-event timelines, cancelled and fulfilment-aware messaging, restaurant-timezone formatting, unknown lookup, and uncached repeat reads
 - Order transition policy and role capability helpers
+- Normal one-edge order progression, skip/backward/terminal rejection, staff/admin cancellation boundaries, required trimmed cancellation reasons, stale-screen and concurrent-write conflicts, actor attribution, and audit-event rollback atomicity
 - Analytics range helpers/timezone boundaries
 - Credential normalization and valid/invalid/unknown/disabled authentication outcomes
 - Bcrypt verification and cost-12 hashing
 - Current-database ACTIVE-user resolution for stale JWT defense
 - ADMIN/STAFF capability policy and development provisioning guards
+- Public category/item visibility, deterministic catalog ordering, sold-out display policy, search/category filtering, detail visibility, option filtering, safe local image-path exposure, and integer-cent formatting
+- Admin/staff catalog capability boundaries, category/item schemas, slug normalization/conflict mapping, strict decimal-to-cents parsing, safe image paths, group bounds, item/group/option relationships, success-only public cache invalidation, and historical snapshot isolation
 
 Pure business behavior should be separated from framework code for fast deterministic tests.
 
@@ -74,7 +80,7 @@ Use factories with explicit fictional names/domains/phone ranges. Tests must not
 
 ## 6. Quality gate evolution
 
-Current authentication gate: Prisma validate/generate when relevant, `npm test`, lint, typecheck, build, and diff check. The authentication unit suite uses repository boundaries and real bcrypt without mutating PostgreSQL; database wiring is type/build checked. Database-dependent gates require the isolated Copper Spoon PostgreSQL service on host port 5433. When end-to-end support lands, add a separate `test:e2e` gate and keep browser artifacts out of Git.
+Current feature gate: Prisma validate/generate when relevant, `npm test`, lint, typecheck, build, and diff check. Authentication and public-catalog suites exercise pure policies/repository boundaries without mutating PostgreSQL; database wiring is type/build checked. Database-dependent gates require the isolated Copper Spoon PostgreSQL service on host port 5433. When end-to-end support lands, add a separate `test:e2e` gate and keep browser artifacts out of Git.
 
 Coverage thresholds may be introduced after meaningful tests exist. Passing a percentage is never a substitute for covering the invariant list above.
 
@@ -83,3 +89,17 @@ Coverage thresholds may be introduced after meaningful tests exist. Passing a pe
 Every feature PR includes a short reproducible verification path. Before release, run keyboard-only flows, browser responsive checks, screen-reader spot checks, slow/error states, a clean-database migration/seed, and the hosted-demo smoke suite.
 
 For staff authentication, verify that anonymous `/admin` navigation redirects to `/admin/login`; unknown email, wrong password, and disabled account all show the same public failure; a provisioned active admin reaches the dashboard; sign-out returns to login; and changing the signed-in database user to `DISABLED` causes the next protected request to be rejected. Check the form with keyboard-only navigation and its password visibility, pending, and validation states.
+
+For the public menu, verify seeded category/item order, live name/description search, horizontal mobile category controls, keyboard focus, published sold-out treatment, responsive cards at 320 px and desktop widths, item detail options/pricing, back navigation, and a 404 for an unknown or unpublished slug. Temporarily unpublishing all categories/items in local development may be used to inspect both catalog empty states; restore with the idempotent seed.
+
+For imagery, inspect the homepage hero at mobile/desktop crops, confirm only the hero is preloaded, verify consistent card ratios and detail-page scaling, and temporarily set one local seed image path to a nonexistent `/images/menu/...` value to exercise the branded fallback without a broken-image icon. Restore the idempotent seed afterward.
+
+For the cart, configure the same dish with identical and different choices, verify identical configurations merge while different configurations remain separate, change quantities, remove lines, and refresh `/cart` to confirm browser persistence. Verify required/min/max choice feedback with a keyboard, sold-out add controls, header count updates, local images/fallbacks at 320 px and desktop widths, the empty cart state, and the checkout CTA. Corrupt or version-bump the `copper-spoon:cart` local-storage value and confirm hydration safely produces an empty cart. No cart action before checkout should create an order or write to PostgreSQL.
+
+For checkout, place one pickup order using pay on pickup and one delivery order using pay on delivery or demo card. Verify delivery fields/payment choices switch with fulfilment, validation errors are associated, the submit button remains pending, current delivery fee/minimum are shown, success clears the cart, and the `CS-…` confirmation contains authoritative snapshots/totals but no contact/address/internal ID. In development only, change an item price or availability after adding it to the cart and confirm checkout reprices or safely rejects the whole order; restore the seed afterward. Resubmit the same captured checkout token and verify it resolves the original public code rather than creating another order.
+
+For customer order status, open a newly placed `PENDING` order, append valid status events through the staff order-management tooling, and refresh after each change. Verify chronological actual-event history, pickup `READY`, delivery prepared/next-step wording, prominent `CANCELLED` treatment, restaurant-timezone timestamps, lowercase code canonicalization, identical invalid/unknown not-found behavior, keyboard use of `/track-order`, and no overflow at 320 px. Inspect rendered/network data to confirm contact/address fields, checkout token, staff actors, event notes, and internal IDs are absent.
+
+For restaurant operations, sign in as staff and exercise `/admin/orders` search, status/fulfilment filters, empty results, paging, mobile cards, and order detail. Advance a fixture one step at a time, then open the same order in two tabs and confirm the second stale submission is rejected. Verify staff cancellation is offered only for pending/confirmed, admin cancellation also for preparing, cancellation always requires a reason, and ready/terminal orders have no cancellation path. Inspect the status history for actor, transition, reason, and timestamp, then refresh the public bearer-code page and confirm only status/time—not the internal reason or actor—is visible.
+
+For catalog management, create an unpublished fictional category and item as admin, then publish them and verify `/menu` changes immediately. Change the price, set sold out, unpublish, restore, add inactive option groups/options, and activate only after valid available-choice bounds exist. Archive the item through its confirmation and verify it disappears publicly. Compare an existing order detail before/after name/price/option edits to confirm snapshots are unchanged. Sign in as staff to confirm the overview is read-only and direct write-route/action access is denied. Check forms and overview at 320 px and desktop widths.
