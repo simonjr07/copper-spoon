@@ -6,7 +6,7 @@ export default function MenuItemNotFound() {
   return (
     <>
       <PublicHeader />
-      <main className="mx-auto grid min-h-[70vh] w-full max-w-3xl place-items-center px-5 py-16 text-center sm:px-8">
+      <main className="mx-auto grid min-h-[70vh] w-full max-w-3xl place-items-center px-5 py-16 text-center sm:px-8" id="main-content" tabIndex={-1}>
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-copper">
             Not on today&apos;s menu

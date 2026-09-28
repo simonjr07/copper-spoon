@@ -40,6 +40,7 @@ This project is done when the agreed product works end to end, is reviewable and
 - Restaurant staff can search/filter a fresh responsive order queue, inspect complete operational snapshots/history, advance only one valid lifecycle edge, receive safe stale-state feedback, and cancel only within the documented role window with a required internal reason.
 - Staff can inspect the current catalog read-only; admins can manage category/item/option lifecycle, ordering, exact prices, and safe local imagery. Successful writes immediately refresh public catalog data, destructive relationship deletion is avoided, and historical order snapshots remain unchanged.
 - Critical public flow works from 320 px mobile through desktop; dashboard is usable at its target breakpoints.
+- Public and admin routes use consistent local containers, cards, controls, buttons, badges, focus treatment, loading/empty/error states, and responsive navigation without requiring a heavy client UI library.
 - Semantic structure, keyboard access, focus management, names/labels, errors, contrast, and reduced motion pass review.
 - Loading, empty, success, stale/conflict, and unexpected-error states are intentional.
 - Visual design feels warm, modern, approachable, and internationally neutral rather than like an unchanged starter/template.

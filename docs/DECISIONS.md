@@ -154,6 +154,14 @@ This lightweight decision log records choices that materially constrain future w
 - Why: Restaurant operators need current workload and fulfilment signals, calendar days must match the restaurant rather than the server, and historical item reporting must survive catalog renames or archival.
 - Consequence: Each dashboard request performs bounded concurrent aggregates and a small recent-order query. Missing statuses/days become explicit zeroes, invalid timezone settings fall back to UTC, private order fields never enter the dashboard DTO, and no metric is described as settled revenue or payment performance.
 
+## ADR-020: Local, server-first responsive interface system
+
+- Status: Accepted and implemented
+- Date: 2026-09-29
+- Decision: Keep the existing Tailwind-based warm Copper Spoon visual direction and standardize a small set of repository-local layout, surface, control, button, badge, focus, loading, and error patterns. Retain Server Components for reads and introduce client boundaries only for existing interactions and active-path navigation.
+- Why: The product needs consistent accessible behavior from 320 px through desktop without a large component library, heavy charting dependency, or architecture rewrite.
+- Consequence: Shared CSS component utilities and focused React components now carry the visual contract. Admin tables use responsive cards, navigation scrolls safely on narrow screens, motion respects user preferences, private flows use `noindex`, and route error boundaries show safe recovery actions without technical details.
+
 ## Pending decisions
 
 | ID | Decision | Needed by |

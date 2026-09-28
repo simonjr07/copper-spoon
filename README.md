@@ -2,6 +2,8 @@
 
 Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It combines a responsive customer ordering experience with a role-protected restaurant operations dashboard.
 
+The interface uses a shared warm cream, copper, charcoal, and botanical design system with responsive public ordering and mobile-safe operational views. Private, cart, checkout, tracking, and bearer-code pages are excluded from search indexing where appropriate.
+
 This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, a browser-persisted guest cart, authoritative pickup/delivery checkout and customer tracking, the staff order workflow, and admin-only catalog management.
 
 ## Product scope

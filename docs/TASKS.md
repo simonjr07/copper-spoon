@@ -144,6 +144,8 @@ Branch: `feat/ux-polish`
 - Refine design system, imagery, navigation, responsive layouts, skeleton/empty/error states, micro-interactions, and dashboard density.
 - Preserve performance and reduced-motion behavior; avoid generic-template styling.
 
+Status: implemented. Public ordering and private operations now share a refined local visual system, visible focus behavior, reduced-motion support, responsive cards/forms/navigation, active admin navigation, safe route error recovery, richer loading/empty states, and appropriate private-flow indexing controls. No business semantics, heavy UI library, or animation dependency was added.
+
 Depends on: feature-complete flows.
 
 ## 13. Security, accessibility, and performance hardening

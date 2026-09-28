@@ -21,7 +21,7 @@ export function CartPageContent() {
 
   if (lines.length === 0) {
     return (
-      <section className="mx-auto grid min-h-[60vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8">
+      <section className="mx-auto grid min-h-[60vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8" id="main-content" tabIndex={-1}>
         <div>
           <span
             aria-hidden="true"
@@ -53,7 +53,7 @@ export function CartPageContent() {
   const subtotal = getCartSubtotal({ lines });
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-12">
+    <main className="page-container py-10 sm:py-14" id="main-content" tabIndex={-1}>
       <div className="flex flex-col gap-4 border-b border-[#3e2920]/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-copper">
@@ -209,7 +209,7 @@ export function CartPageContent() {
 
 function CartLoading() {
   return (
-    <main className="mx-auto min-h-[70vh] w-full max-w-7xl animate-pulse px-5 py-10 sm:px-8 lg:px-12">
+    <main aria-busy="true" className="mx-auto min-h-[70vh] w-full max-w-7xl animate-pulse px-5 py-10 sm:px-8 lg:px-12" id="main-content" tabIndex={-1}>
       <div className="h-4 w-20 rounded-full bg-line" />
       <div className="mt-5 h-12 w-48 rounded-xl bg-line/70" />
       <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AdminHeader } from "@/components/admin-header";
+import { OrderStatusBadge } from "@/components/order-status-badge";
 import {
   canCancelOrder,
   getNormalNextStatus,
@@ -22,9 +23,9 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
   const cancellable = canCancelOrder(user.role, order.status);
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-7xl px-4 py-8 sm:px-8 lg:px-12">
+    <main className="admin-container">
       <AdminHeader user={user} />
-      <div className="py-8">
+      <div className="py-8" id="workspace-content" tabIndex={-1}>
         <Link className="text-sm font-semibold text-copper hover:underline" href="/admin/orders">← Back to order queue</Link>
         <div className="mt-5 flex flex-col gap-4 border-b border-line pb-7 md:flex-row md:items-end md:justify-between">
           <div>
@@ -32,7 +33,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
             <h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-ink">{order.customerName}</h1>
             <p className="mt-2 text-muted">Placed {formatAdminTime(order.placedAt)} · {order.fulfilmentType === "PICKUP" ? "Pickup" : "Delivery"}</p>
           </div>
-          <div className="rounded-full border border-line bg-surface px-4 py-2 font-semibold text-ink">{getOrderStatusLabel(order.status)}</div>
+          <OrderStatusBadge status={order.status} />
         </div>
 
         <div className="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.75fr)]">
@@ -97,8 +98,8 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) { return <section className="rounded-2xl border border-line bg-surface p-5 sm:p-6"><h2 className="mb-5 text-xl font-semibold text-ink">{title}</h2>{children}</section>; }
-function Detail({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) { return <div className="grid grid-cols-[7rem_1fr] gap-3"><dt className="text-muted">{label}</dt><dd className={strong ? "font-bold text-ink" : "font-medium text-ink"}>{value}</dd></div>; }
+function Section({ title, children }: { title: string; children: React.ReactNode }) { return <section className="surface-card p-5 sm:p-6"><h2 className="mb-5 text-xl font-semibold text-ink">{title}</h2>{children}</section>; }
+function Detail({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) { return <div className="grid gap-1 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-3"><dt className="text-muted">{label}</dt><dd className={`break-words ${strong ? "font-bold text-ink" : "font-medium text-ink"}`}>{value}</dd></div>; }
 function formatAdminTime(date: Date) { return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(date); }
 function humanize(value: string) { return value.toLowerCase().replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()); }
 

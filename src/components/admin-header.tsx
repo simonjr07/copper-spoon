@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminNavigation } from "@/components/admin-navigation";
 import { logoutAction } from "@/features/auth/actions";
 
 export function AdminHeader({
@@ -8,42 +9,33 @@ export function AdminHeader({
   user: { name: string; role: "ADMIN" | "STAFF" };
 }) {
   return (
-    <header className="flex flex-col gap-5 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
-      <div>
+    <header className="border-b border-line pb-5">
+      <a className="skip-link" href="#workspace-content">Skip to workspace content</a>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center justify-between gap-4">
         <Link
-          className="text-sm font-semibold uppercase tracking-[0.24em] text-copper"
+          className="inline-flex items-center gap-3 rounded-lg"
           href="/admin"
         >
-          Copper Spoon
+          <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-full bg-copper font-semibold text-white">C</span>
+          <span>
+            <span className="block text-xs font-semibold uppercase tracking-[0.22em] text-copper">Copper Spoon</span>
+            <span className="block text-sm font-medium text-ink">Restaurant workspace</span>
+          </span>
         </Link>
-        <nav aria-label="Restaurant workspace" className="mt-3 flex gap-4 text-sm">
-          <Link className="font-medium text-ink hover:text-copper" href="/admin">
-            Dashboard
-          </Link>
-          <Link className="font-medium text-ink hover:text-copper" href="/admin/orders">
-            Orders
-          </Link>
-          <Link className="font-medium text-ink hover:text-copper" href="/admin/menu">
-            Menu
-          </Link>
-          {user.role === "ADMIN" ? (
-            <Link className="font-medium text-ink hover:text-copper" href="/admin/users">
-              Staff
-            </Link>
-          ) : null}
-        </nav>
-        <p className="mt-3 text-sm text-muted">
-          Signed in as {user.name} · {user.role}
-        </p>
+          <span className="shrink-0 rounded-full bg-[#ead8c8] px-2.5 py-1 text-xs font-bold uppercase tracking-[0.08em] text-[#71381f] sm:hidden">{user.role}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <p className="min-w-0 text-sm text-muted">
+            <span className="block truncate font-semibold text-ink">{user.name}</span>
+            <span className="hidden text-xs uppercase tracking-[0.1em] sm:block">{user.role}</span>
+          </p>
+          <form action={logoutAction}>
+            <button className="button-secondary whitespace-nowrap" type="submit">Sign out</button>
+          </form>
+        </div>
       </div>
-      <form action={logoutAction}>
-        <button
-          className="rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition hover:border-copper hover:text-copper"
-          type="submit"
-        >
-          Sign out
-        </button>
-      </form>
+      <div className="mt-4"><AdminNavigation role={user.role} /></div>
     </header>
   );
 }
