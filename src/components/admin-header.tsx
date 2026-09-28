@@ -23,6 +23,9 @@ export function AdminHeader({
           <Link className="font-medium text-ink hover:text-copper" href="/admin/orders">
             Orders
           </Link>
+          <Link className="font-medium text-ink hover:text-copper" href="/admin/menu">
+            Menu
+          </Link>
         </nav>
         <p className="mt-3 text-sm text-muted">
           Signed in as {user.name} · {user.role}
@@ -39,4 +42,3 @@ export function AdminHeader({
     </header>
   );
 }
-

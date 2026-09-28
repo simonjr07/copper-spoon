@@ -130,6 +130,14 @@ This lightweight decision log records choices that materially constrain future w
 - Why: A small explicit state machine is easier to operate, audit, and test than arbitrary status writes. Admin late-stage authority handles exceptional kitchen cases without allowing cancellation after the order is ready.
 - Consequence: The server re-reads current state, uses `updatedAt` only as a stale-screen token, conditionally updates the row, and inserts the actor-attributed event in one serializable transaction. Public DTOs continue to omit internal notes and actors.
 
+## ADR-017: Non-destructive catalog lifecycle and targeted cache expiry
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Categories leave the public menu by unpublishing rather than deletion. Menu items distinguish draft, published, temporarily unavailable, and archived states; archive also unpublishes. Option groups become inactive and options unavailable instead of being destructively removed. Every successful catalog mutation immediately expires only the `public-menu` cache tag.
+- Why: Catalog relationships and historical orders need stable references, sold-out dishes should remain discoverable, and operators need public changes to appear immediately without clearing unrelated site/settings caches.
+- Consequence: Admin forms expose lifecycle toggles and an explicit archive confirmation. Active option selection bounds cannot exceed available choices. Catalog mutations never update order-owned snapshots, and `restaurant-settings` is not invalidated by catalog-only changes.
+
 ## Pending decisions
 
 | ID | Decision | Needed by |

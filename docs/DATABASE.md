@@ -42,6 +42,8 @@ Unique slug, display content, non-negative `sortOrder`, publish state, timestamp
 
 Task 8 required no schema migration. Existing `Order.status`, `updatedAt`, `completedAt`, and `cancelledAt` columns support the lifecycle and optimistic concurrency, while existing `OrderStatusEvent.fromStatus`, `toStatus`, `changedByUserId`, `note`, and `createdAt` columns provide the operational audit record. Status updates use a serializable transaction and a conditional current-row predicate before inserting the event.
 
+Task 9 also required no migration. Existing category/item/group/option publication, availability, archive, ordering, selection-bound, unique-slug/name, and restrictive relationship fields support the admin catalog workflow. Category deletion is not exposed; unpublishing is the safe removal mechanism. Item archive sets `isArchived=true` and `isPublished=false`. Order snapshots live on separate order-owned rows and are never updated by catalog mutations.
+
 ### `MenuItem`
 
 Category relation, unique slug, display content, `priceCents`, currency, optional image URL, ordering, publication, availability, archive state, timestamps, option groups, and optional historical order-item references.

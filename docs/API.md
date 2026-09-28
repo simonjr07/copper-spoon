@@ -25,7 +25,7 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 | `getDashboardSummary` | Admin/Staff | Operational counts and recent orders |
 | `listOrders` (implemented) | Admin/Staff | Fresh searchable, status/fulfilment-filtered, paginated order summaries |
 | `getOrderDetail` (implemented) | Admin/Staff | Full operational snapshot, customer/fulfilment details, totals, and complete internal status history |
-| `getMenuAdmin` | Admin | Categories/items/options including unavailable records |
+| `getMenuAdmin` (implemented) | Admin/Staff read-only | Fresh categories/items/options including draft, unavailable, inactive, and archived records |
 | `listStaff` | Admin | Staff metadata without password hashes |
 | `getAnalytics` | Admin | Period aggregates from persisted non-cancelled order totals |
 
@@ -35,9 +35,10 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 | --- | --- | --- |
 | `createOrder` (implemented; rate limit pending) | Public | Validate checkout, resolve idempotency token, reprice, transactionally create snapshots/event |
 | `updateOrderStatus` (implemented) | Admin/Staff | Re-read current order, enforce role/status policy and optimistic concurrency, atomically update and append actor-attributed event |
-| `createCategory` / `updateCategory` | Admin | Validate slug/order/active state; revalidate menu |
-| `createMenuItem` / `updateMenuItem` | Admin | Validate price/category/options; revalidate menu |
-| `setMenuItemAvailability` | Admin | Fast sold-out toggle; revalidate public menu |
+| `createCategory` / `updateCategory` (implemented) | Admin | Normalize/validate unique slug, ordering and publication; immediately expire `public-menu` |
+| `createMenuItem` / `updateMenuItem` (implemented) | Admin | Validate category, exact decimal price, local image path, publication/availability/archive state; expire `public-menu` |
+| `archiveMenuItem` (implemented) | Admin | Confirm, archive and unpublish without deleting historical references; expire `public-menu` |
+| `create/updateOptionGroup` and `create/updateMenuOption` (implemented) | Admin | Verify item/group relationships, selection bounds and exact adjustment cents; expire `public-menu` |
 | `updateRestaurantSettings` | Admin | Validate fulfilment/payment compatibility |
 | `createStaffUser` | Admin | Controlled account creation with bcrypt hash |
 | `updateStaffUser` | Admin | Role/status update with last-admin protection |
@@ -101,6 +102,8 @@ Caching policy will use the APIs documented by the installed Next.js version at 
 Implemented public catalog reads use a five-minute `unstable_cache` TTL and the `public-menu` / `restaurant-settings` tags. The future menu/settings mutations invalidate the relevant tag after a successful commit. Public list/detail DTOs contain display fields only and never expose publication flags, sort keys, archive state, timestamps, or other administrative metadata. A published item with `isAvailable=false` remains visible as sold out and is never presented as orderable.
 
 Implemented customer order-status reads are deliberately uncached and run through a separate server-only repository on every `/order/[orderCode]` request. The route is forced dynamic; browser refresh is the initial freshness mechanism. Status mutations revalidate admin routes; no public status cache exists to invalidate.
+
+Implemented admin catalog mutations call `updateTag("public-menu")` only after a successful database write, providing immediate read-your-own-writes behavior for both public list and item-detail caches. They do not invalidate `restaurant-settings`, because catalog changes do not mutate settings.
 
 ## 10. Public order-status contract
 

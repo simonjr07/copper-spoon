@@ -38,7 +38,7 @@ src/
     order/[orderCode]/     Public bearer-code confirmation route
     track-order/           Public order-code entry route
     admin/
-      (protected)/         Protected dashboard plus order queue/detail routes
+      (protected)/         Protected dashboard, order workflow, and catalog management
     api/                   Auth.js and explicit HTTP handlers
     layout.tsx
     page.tsx
@@ -109,6 +109,14 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 3. Zod parses the order ID, desired status, concurrency timestamp, and bounded optional reason. Inside the transaction the service re-reads the authoritative status and applies the explicit transition/cancellation policy.
 4. A conditional `id + status + updatedAt` update detects a concurrent write. The update and actor-attributed `OrderStatusEvent` are committed together at serializable isolation; either both happen or neither happens.
 5. Admin paths are revalidated and the action returns a safe success, validation, policy, or stale-state message. The public reader remains uncached and never projects event notes/actors.
+
+### Admin catalog mutation
+
+1. `/admin/menu` requires `menu:read`, giving staff a fresh read-only overview. Category/item edit routes and every action independently require `categories:write` or `menu:write`, which are admin-only capabilities.
+2. Zod normalizes slugs, parses booleans/order fields, converts strict decimal text directly to integer cents, and allowlists repository-local image paths. Database unique/relationship failures are mapped to safe domain messages.
+3. The server-only admin catalog repository verifies item/group/option ownership and prevents active selection bounds from exceeding currently available choices. Categories are unpublished rather than deleted; item archive atomically sets archived and unpublished.
+4. Successful writes immediately expire only the `public-menu` tag and revalidate the relevant admin route. Failed writes never invalidate the cache. Public catalog policy continues to hide unpublished categories/items and archived items while retaining published unavailable items as sold out.
+5. Catalog tables and order snapshot tables are never updated together. Existing `OrderItem` and `OrderItemOption` snapshot names/prices therefore remain immutable when current catalog data changes.
 
 ## 5. Authentication and authorization
 

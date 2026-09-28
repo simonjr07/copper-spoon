@@ -27,11 +27,13 @@ export default async function AdminDashboardPage() {
             status="Active"
           />
         </Link>
-        <WorkspaceCard
-          description="View the current menu and item availability."
-          label="Menu"
-          status="Planned"
-        />
+        <Link href="/admin/menu">
+          <WorkspaceCard
+            description="View the catalog and manage publication and availability."
+            label="Menu"
+            status="Active"
+          />
+        </Link>
         {canManageStaff ? (
           <WorkspaceCard
             description="Admin-only staff account management foundation."

@@ -1,0 +1,8 @@
+import Link from "next/link";
+import { AdminHeader } from "@/components/admin-header";
+import { requirePermission } from "@/server/auth/authorization";
+import { roleHasPermission } from "@/server/auth/permissions";
+import { getAdminCategories } from "@/server/menu/admin-catalog";
+
+export default async function CategoriesPage() { const user = await requirePermission("menu:read"); const categories = await getAdminCategories(); const canWrite = roleHasPermission(user.role, "categories:write"); return <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-8 sm:px-8"><AdminHeader user={user} /><section className="py-8"><div className="flex items-end justify-between"><div><Link className="text-sm font-semibold text-copper" href="/admin/menu">← Menu</Link><h1 className="mt-3 text-4xl font-semibold">Categories</h1></div>{canWrite ? <Link className="rounded-xl bg-copper px-4 py-2.5 font-semibold text-white" href="/admin/menu/categories/new">New category</Link> : null}</div><div className="mt-7 grid gap-3">{categories.map((category) => <article className="grid gap-3 rounded-2xl border border-line bg-surface p-5 sm:grid-cols-[1fr_auto_auto] sm:items-center" key={category.id}><div><h2 className="font-semibold">{category.name}</h2><p className="text-sm text-muted">/{category.slug} · {category._count.menuItems} items</p></div><p className="text-sm">{category.isPublished ? "Published" : "Hidden"} · order {category.sortOrder}</p>{canWrite ? <Link className="font-semibold text-copper" href={`/admin/menu/categories/${category.id}/edit`}>Edit</Link> : null}</article>)}</div></section></main>; }
+

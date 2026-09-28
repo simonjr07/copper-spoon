@@ -2,7 +2,7 @@
 
 Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It combines a responsive customer ordering experience with a role-protected restaurant operations dashboard.
 
-This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, a browser-persisted guest cart, authoritative pickup/delivery checkout and customer tracking, plus the staff order queue and status workflow.
+This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, a browser-persisted guest cart, authoritative pickup/delivery checkout and customer tracking, the staff order workflow, and admin-only catalog management.
 
 ## Product scope
 
@@ -49,6 +49,8 @@ Available dishes can be configured on their detail pages and added to `http://lo
 Customers can reopen `/order/[orderCode]` or use `/track-order` to fetch the latest recorded status and timeline. The public view uses immutable order snapshots, formats timestamps in the restaurant timezone, and excludes contact details, delivery addresses, internal IDs, staff actors, and notes. It does not promise polling, notifications, live kitchen telemetry, driver tracking, or precise ETAs.
 
 Active `STAFF` and `ADMIN` users can use `/admin/orders` to search and filter the fresh operational queue, inspect contact, fulfilment, snapshots, totals, and internal status history, and advance one state at a time. Staff may cancel only `PENDING` or `CONFIRMED` orders; admins may additionally cancel `PREPARING` orders. Every cancellation requires a reason. `READY`, `COMPLETED`, and `CANCELLED` orders cannot be cancelled.
+
+`/admin/menu` gives staff a read-only catalog overview and admins complete category, item, option-group, and option editing. Admin writes use normalized unique slugs, exact decimal-to-cents conversion, repository-local image paths, safe unpublish/archive behavior, and immediate `public-menu` cache expiry. Catalog edits never rewrite historical order snapshots.
 
 Customer-facing food imagery is stored locally under `public/images/hero` and `public/images/menu`. The homepage preloads only its above-the-fold hero; menu images use responsive `next/image` sizing and lazy loading. Seeded `MenuItem.imageUrl` values are repository-local `/images/...` paths, and missing or invalid paths render an accessible visual fallback.
 

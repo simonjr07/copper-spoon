@@ -107,6 +107,8 @@ Depends on: Tasks 3 and 6.
 
 Branch: `feat/menu-management`
 
+Status: implemented. Staff have a fresh read-only catalog overview; admins can create/edit categories and menu items, manage publication/availability/archive/order, and create/edit option groups and options. Strict cents/image/slug/relationship/bounds validation, safe conflict errors, targeted immediate `public-menu` cache expiry, and snapshot isolation are covered by focused tests. No schema migration was required.
+
 - Build admin category/item/option CRUD, ordering, validation, archive behavior, and fast availability controls.
 - Connect cache revalidation and verify historical orders remain unchanged.
 
