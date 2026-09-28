@@ -34,6 +34,8 @@ Payment fields model demonstration/restaurant workflow only. They do not represe
 
 Credentials and staff authorization: normalized unique email, name, bcrypt-ready `passwordHash`, role, active/disabled status, last login, and timestamps. No users or credentials are seeded.
 
+Task 10 required no schema migration. Staff management uses the existing `User` fields and unique normalized-email constraint. Last-active-admin checks run inside a PostgreSQL serializable transaction with the role/status update, preventing concurrent write-skew from committing two removals that would leave no active administrator. Product behavior disables accounts rather than deleting them.
+
 ### `Category`
 
 Unique slug, display content, non-negative `sortOrder`, publish state, timestamps, and one-to-many menu items.

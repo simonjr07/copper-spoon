@@ -60,6 +60,8 @@ Copper Spoon binds PostgreSQL only to `127.0.0.1:5433`; PostgreSQL continues to 
 
 Generate a unique `AUTH_SECRET` in the ignored `.env` before using staff authentication. No staff user is seeded and there is no registration route.
 
+Active admins can manage fictional staff accounts at `/admin/users`: create active `STAFF` or `ADMIN` accounts, edit safe profile fields, disable/reactivate other users, and replace another user's password. The workflow never returns password hashes, forbids self-disable and self-role changes, and transactionally preserves at least one active administrator.
+
 ## Development admin provisioning
 
 Provision an initial local admin only after the database migration is applied. Supply all values through the current shell; do not add real credentials to `.env.example` or Git.

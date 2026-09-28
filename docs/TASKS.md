@@ -118,6 +118,8 @@ Depends on: Tasks 3, 4, and 8.
 
 Branch: `feat/staff-management`
 
+Status: implemented. Admin-only `/admin/users` list/create/edit workflows manage normalized safe profiles, roles, disable/reactivate status, and another user's password. Serializable last-active-admin protection, strict self-lockout prevention, bcrypt cost 12, safe DTOs/errors, and focused lifecycle/concurrency tests are present. No schema migration was required.
+
 - Build admin-only listing, creation, role/status changes, secure password setup/reset process, and last-active-admin safeguards.
 - Audit high-impact changes and test all role paths.
 

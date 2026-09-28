@@ -26,7 +26,7 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 | `listOrders` (implemented) | Admin/Staff | Fresh searchable, status/fulfilment-filtered, paginated order summaries |
 | `getOrderDetail` (implemented) | Admin/Staff | Full operational snapshot, customer/fulfilment details, totals, and complete internal status history |
 | `getMenuAdmin` (implemented) | Admin/Staff read-only | Fresh categories/items/options including draft, unavailable, inactive, and archived records |
-| `listStaff` | Admin | Staff metadata without password hashes |
+| `listStaff` (implemented) | Admin | Fresh safe staff identity, role/status, creation and last-login metadata; never password hashes |
 | `getAnalytics` | Admin | Period aggregates from persisted non-cancelled order totals |
 
 ## 4. Planned Server Actions
@@ -40,8 +40,10 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 | `archiveMenuItem` (implemented) | Admin | Confirm, archive and unpublish without deleting historical references; expire `public-menu` |
 | `create/updateOptionGroup` and `create/updateMenuOption` (implemented) | Admin | Verify item/group relationships, selection bounds and exact adjustment cents; expire `public-menu` |
 | `updateRestaurantSettings` | Admin | Validate fulfilment/payment compatibility |
-| `createStaffUser` | Admin | Controlled account creation with bcrypt hash |
-| `updateStaffUser` | Admin | Role/status update with last-admin protection |
+| `createStaffUser` (implemented) | Admin | Normalize unique email, validate strong password/role, create ACTIVE account with bcrypt cost 12 |
+| `updateStaffUser` (implemented) | Admin | Edit safe identity/role fields with serializable last-admin and self-role protection |
+| `setStaffUserStatus` (implemented) | Admin | Confirm disable/reactivate, prevent self-disable and transactionally preserve an ACTIVE ADMIN |
+| `resetStaffPassword` (implemented) | Admin | Replace another user's password using the same policy and cost; no existing/plaintext password response |
 
 Action result shape:
 
@@ -118,4 +120,4 @@ The public DTO includes only public code, current status, fulfilment/payment lab
 - JWT/session callbacks expose only `id`, `name`, `email`, `role`, and `status`; the password hash never enters the token or client session.
 - `src/proxy.ts` optimistically redirects anonymous requests for `/admin` and nested routes except `/admin/login`.
 - Secure server queries/mutations call `requireActiveUser`, `requireRole`, or `requirePermission`, which re-read the current database account.
-- No registration, password-reset, or customer-authentication interface exists.
+- No registration, public/self-service password-reset, or customer-authentication interface exists. Admin-driven replacement for another staff account is private and capability-protected.

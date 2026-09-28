@@ -35,11 +35,13 @@ export default async function AdminDashboardPage() {
           />
         </Link>
         {canManageStaff ? (
-          <WorkspaceCard
-            description="Admin-only staff account management foundation."
-            label="Staff"
-            status="Admin access"
-          />
+          <Link href="/admin/users">
+            <WorkspaceCard
+              description="Create, edit, disable, and reactivate staff accounts."
+              label="Staff"
+              status="Admin access"
+            />
+          </Link>
         ) : null}
       </section>
     </main>

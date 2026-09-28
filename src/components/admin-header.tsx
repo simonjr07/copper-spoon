@@ -26,6 +26,11 @@ export function AdminHeader({
           <Link className="font-medium text-ink hover:text-copper" href="/admin/menu">
             Menu
           </Link>
+          {user.role === "ADMIN" ? (
+            <Link className="font-medium text-ink hover:text-copper" href="/admin/users">
+              Staff
+            </Link>
+          ) : null}
         </nav>
         <p className="mt-3 text-sm text-muted">
           Signed in as {user.name} · {user.role}
