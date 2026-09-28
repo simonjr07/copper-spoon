@@ -18,6 +18,7 @@ Tests should protect money calculations, snapshot history, order transactions, s
 - Money arithmetic and formatting
 - Cart reducer/quantity behavior
 - Option selection constraints
+- Cart configuration identity, integer-cent line/subtotal arithmetic, sold-out rejection, and versioned persistence sanitization
 - Zod schemas and conditional checkout rules
 - Order transition policy and role capability helpers
 - Analytics range helpers/timezone boundaries
@@ -88,3 +89,5 @@ For staff authentication, verify that anonymous `/admin` navigation redirects to
 For the public menu, verify seeded category/item order, live name/description search, horizontal mobile category controls, keyboard focus, published sold-out treatment, responsive cards at 320 px and desktop widths, item detail options/pricing, back navigation, and a 404 for an unknown or unpublished slug. Temporarily unpublishing all categories/items in local development may be used to inspect both catalog empty states; restore with the idempotent seed.
 
 For imagery, inspect the homepage hero at mobile/desktop crops, confirm only the hero is preloaded, verify consistent card ratios and detail-page scaling, and temporarily set one local seed image path to a nonexistent `/images/menu/...` value to exercise the branded fallback without a broken-image icon. Restore the idempotent seed afterward.
+
+For the cart, configure the same dish with identical and different choices, verify identical configurations merge while different configurations remain separate, change quantities, remove lines, and refresh `/cart` to confirm browser persistence. Verify required/min/max choice feedback with a keyboard, sold-out add controls, header count updates, local images/fallbacks at 320 px and desktop widths, the empty cart state, and the disabled checkout explanation. Corrupt or version-bump the `copper-spoon:cart` local-storage value and confirm hydration safely produces an empty cart. No cart action should create an order or write to PostgreSQL.

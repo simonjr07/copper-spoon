@@ -33,6 +33,7 @@ The implemented database boundary uses stable Prisma ORM 7.10, `@prisma/adapter-
 src/
   app/
     menu/                  Public catalog list/detail routes
+    cart/                  Browser-persisted guest cart route
     admin/
       (protected)/         Protected dashboard route group
     api/                   Auth.js and explicit HTTP handlers
@@ -79,6 +80,15 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 4. A PostgreSQL transaction creates the order, item snapshots, option snapshots, and initial status event.
 5. The service returns a safe result with order number and public tracking identifier.
 6. The action clears/updates client cart state and redirects to confirmation.
+
+### Guest cart
+
+1. The server-rendered item detail passes its purpose-built public DTO to a narrow configurator Client Component.
+2. The configurator enforces currently rendered group types and min/max selection bounds, then snapshots only display data and integer-cent estimates into a cart line.
+3. A root React context/reducer owns cart actions so the header, detail configurator, and `/cart` route share state without a separate client store dependency.
+4. After client hydration, a versioned strict Zod schema restores `localStorage` data. Invalid, mixed-currency, unsafe-image, or unknown-version payloads fail closed to an empty cart; storage failures leave the in-memory cart usable.
+5. A line identity is the item ID plus sorted group/option IDs. Identical configurations merge quantities, while different choices remain separate lines.
+6. All cart content and totals remain untrusted convenience data. Task 6 sends item/option IDs and quantities and independently re-reads publication, availability, choices, and prices before an order can exist.
 
 ### Staff mutation
 

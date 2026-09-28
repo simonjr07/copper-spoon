@@ -98,6 +98,14 @@ This lightweight decision log records choices that materially constrain future w
 - Why: Local generated assets avoid hotlink, licensing, availability, and remote-host configuration risks while establishing a stable image contract before cart work.
 - Consequence: New menu items need a descriptive local filename, safe `/images/menu/...` seed path, meaningful alt text, web optimization, and a visual review against the established shoot. Source generation prompts/mapping are recorded in `IMAGE_ASSETS.md`; a future replacement must preserve filenames or update seed data deliberately.
 
+## ADR-013: Versioned browser cart with server-authoritative checkout
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Keep the pre-checkout guest cart in a small React context/reducer and persist a versioned, strictly validated display snapshot in `localStorage`. Use item plus sorted option IDs as configuration identity and integer cents for estimates.
+- Why: Guests get fast cross-page cart behavior without accounts, database writes, or another state dependency, while corrupt/stale browser data can be discarded safely.
+- Consequence: The cart is device/browser-local and can become stale. Stored names, prices, images, availability, and totals are never trusted by order creation; Task 6 must re-read all referenced catalog records, revalidate selection bounds, reprice, and create snapshots atomically.
+
 ## Pending decisions
 
 | ID | Decision | Needed by |

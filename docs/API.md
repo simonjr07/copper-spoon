@@ -77,6 +77,12 @@ Client input contains item IDs, option IDs, quantities, customer/fulfilment fiel
 
 Repeated submission protection should use a short-lived idempotency key or equivalent server-side guard. The exact mechanism is finalized with checkout.
 
+### Implemented client cart contract
+
+The cart is not an HTTP or database interface. The browser stores a versioned payload under `copper-spoon:cart` containing item display snapshots, selected option display snapshots, quantities, and estimated integer-cent prices. A strict schema limits lengths/counts, allows only repository-local image paths, rejects mixed currencies, and reconstructs configuration identities during hydration.
+
+Cart actions support add/merge, bounded quantity change, removal, and clear. This payload is never authoritative: Task 6 must submit identifiers and quantities, discard stored prices/names/totals as authority, and reject the whole checkout when current publication, availability, option membership, bounds, or currency no longer match.
+
 ## 7. Status transition contract
 
 The action accepts order ID, desired status, and an expected current status/version. It rejects stale or invalid transitions with `CONFLICT`, rather than overwriting another staff member's update. Successful updates atomically modify the order and append `OrderStatusEvent`.

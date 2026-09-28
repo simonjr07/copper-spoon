@@ -4,8 +4,9 @@ import { notFound } from "next/navigation";
 
 import { MenuVisual } from "@/components/menu-visual";
 import { PublicHeader } from "@/components/public-header";
+import { ItemConfigurator } from "@/features/cart/item-configurator";
 import { AvailabilityBadge } from "@/features/menu/menu-browser";
-import { formatMoney, formatPriceAdjustment } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { getPublicMenuItem } from "@/server/menu/public-catalog";
 
 export const dynamic = "force-dynamic";
@@ -86,79 +87,10 @@ export default async function MenuItemPage({ params }: MenuItemPageProps) {
               </aside>
             ) : null}
 
-            {item.optionGroups.length > 0 ? (
-              <section className="mt-10 border-t border-[#3e2920]/10 pt-8" aria-labelledby="choices-heading">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-copper">
-                  Served your way
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold text-ink" id="choices-heading">
-                  Available choices
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-muted">
-                  Choices are informational for now. Selection and cart controls arrive in the next step.
-                </p>
-
-                <div className="mt-6 space-y-5">
-                  {item.optionGroups.map((group) => (
-                    <section className="rounded-2xl border border-[#3e2920]/10 bg-[#fffaf2] p-5" key={group.id}>
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <h3 className="font-semibold text-ink">{group.name}</h3>
-                        <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">
-                          {getSelectionLabel(group)}
-                        </p>
-                      </div>
-                      <ul className="mt-4 divide-y divide-[#3e2920]/8">
-                        {group.options.map((option) => (
-                          <li className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0" key={option.id}>
-                            <span className="flex items-center gap-3 text-sm text-ink">
-                              <span aria-hidden="true" className="size-2 rounded-full bg-[#c7835d]" />
-                              {option.name}
-                            </span>
-                            <span className="text-sm font-semibold text-muted">
-                              {formatPriceAdjustment(option.priceAdjustmentCents, item.currency)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  ))}
-                </div>
-              </section>
-            ) : (
-              <p className="mt-10 border-t border-[#3e2920]/10 pt-8 text-sm text-muted">
-                This dish has no additional choices.
-              </p>
-            )}
-
-            <div className="mt-10 rounded-2xl bg-[#35241d] p-5 text-white">
-              <p className="font-semibold">
-                {item.isAvailable ? "Ready for a future order" : "Unavailable today"}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-[#e6d9ce]">
-                Cart and checkout are intentionally not enabled in this menu-browsing release.
-              </p>
-            </div>
+            <ItemConfigurator item={item} />
           </article>
         </div>
       </main>
     </>
   );
-}
-
-function getSelectionLabel(group: {
-  selectionType: "SINGLE" | "MULTIPLE";
-  minSelections: number;
-  maxSelections: number;
-}) {
-  if (group.minSelections === 0) {
-    return group.maxSelections === 1
-      ? "Optional · choose up to 1"
-      : `Optional · choose up to ${group.maxSelections}`;
-  }
-
-  if (group.selectionType === "SINGLE") {
-    return "Choose 1";
-  }
-
-  return `Choose ${group.minSelections}–${group.maxSelections}`;
 }

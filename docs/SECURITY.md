@@ -7,6 +7,7 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 ## 2. Trust boundaries
 
 - Browser data is untrusted, including hidden fields, totals, role/status values, IDs, and cart content.
+- The versioned local cart schema limits and sanitizes browser persistence for resilient rendering only; it does not make stored item/option IDs, availability, names, prices, or totals authoritative.
 - Server Actions and Route Handlers are network-reachable boundaries, even when only referenced by protected UI.
 - Sessions prove identity but sensitive operations also confirm active account state and authorization.
 - Database values rendered into HTML still require safe framework rendering and intentional DTO selection.

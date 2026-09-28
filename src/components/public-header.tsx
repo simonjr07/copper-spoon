@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { CartLink } from "@/features/cart/cart-link";
+
 export function PublicHeader() {
   return (
     <header className="border-b border-[#3e2920]/10 bg-[#fffaf2]/90 backdrop-blur">
@@ -24,13 +26,14 @@ export function PublicHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Primary navigation">
+        <nav aria-label="Primary navigation" className="flex items-center gap-2">
           <Link
-            className="rounded-full border border-[#3e2920]/15 bg-white/60 px-4 py-2 text-sm font-semibold text-ink transition hover:border-copper hover:text-copper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-copper"
+            className="hidden rounded-full border border-[#3e2920]/15 bg-white/60 px-4 py-2 text-sm font-semibold text-ink transition hover:border-copper hover:text-copper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-copper sm:inline-flex"
             href="/menu"
           >
             Browse menu
           </Link>
+          <CartLink />
         </nav>
       </div>
     </header>

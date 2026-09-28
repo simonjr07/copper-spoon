@@ -60,6 +60,8 @@ Status: implemented. The homepage, menu cards, and detail route now use a cohesi
 
 Branch: `feat/cart`
 
+Status: implemented. Available item details enforce active option-group selection bounds before adding a configuration. A versioned, schema-validated browser cart supports distinct configurations, quantity changes, removal, responsive item imagery, integer-cent line/subtotal estimates, an accessible global count, and empty/loading states. Checkout remains disabled until Task 6 re-reads the catalog and creates orders server-side.
+
 - Implement item customization rules, cart add/edit/remove, quantity controls, persisted local cart, money utilities, and accessible feedback.
 - Treat displayed client totals as estimates pending checkout revalidation.
 - Unit test reducers/calculations and option selection rules.
