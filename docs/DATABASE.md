@@ -38,6 +38,8 @@ Credentials and staff authorization: normalized unique email, name, bcrypt-ready
 
 Unique slug, display content, non-negative `sortOrder`, publish state, timestamps, and one-to-many menu items.
 
+`MenuItem.imageUrl` stores an optional display path. The current portfolio implementation uses repository-local `/images/menu/*.webp` paths; no asset-management schema or migration is required. Public DTO policy rejects remote, traversal-like, or unsupported paths and returns `null` for the UI fallback.
+
 ### `MenuItem`
 
 Category relation, unique slug, display content, `priceCents`, currency, optional image URL, ordering, publication, availability, archive state, timestamps, option groups, and optional historical order-item references.
@@ -149,7 +151,7 @@ The Compose mapping is `127.0.0.1:5433` on the host to PostgreSQL port `5432` in
 - The initial migration includes foreign keys, indexes, enum types, and custom PostgreSQL checks not expressible in the Prisma schema.
 - Every later schema change includes a reviewed migration and corresponding tests/docs.
 - Seed execution is explicit in Prisma 7 (`npm run db:seed`); migration commands do not seed automatically.
-- The seed is idempotent for its known slugs/names and creates only fictional restaurant settings, three categories, four menu items, and options. It never creates a staff user or credential.
+- The seed is idempotent for its known slugs/names and creates only fictional restaurant settings, five categories, seven menu items, local WebP image paths, and representative options. One published dessert is deliberately sold out to exercise the public availability state. It never creates a staff user or credential.
 - Generated Prisma Client is excluded from Git and recreated by `postinstall`/`db:generate`.
 
 ## 11. Integration testing direction

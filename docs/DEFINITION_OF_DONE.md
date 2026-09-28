@@ -30,6 +30,8 @@ This project is done when the agreed product works end to end, is reviewable and
 
 ## User experience
 
+- Public menu list/detail routes expose only published catalog content, preserve configured order, distinguish sold-out items without implying orderability, and handle search/no-data/not-found states.
+- Public food imagery is repository-local, web-optimized, responsive, meaningfully described, visually cohesive, stable during loading, and resilient to missing assets.
 - Critical public flow works from 320 px mobile through desktop; dashboard is usable at its target breakpoints.
 - Semantic structure, keyboard access, focus management, names/labels, errors, contrast, and reduced motion pass review.
 - Loading, empty, success, stale/conflict, and unexpected-error states are intentional.

@@ -2,7 +2,7 @@
 
 Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It will combine a responsive customer ordering experience with a role-protected restaurant operations dashboard.
 
-This repository currently contains the application and PostgreSQL/Prisma database foundations. Ordering, authentication, and dashboard features are intentionally scheduled for later feature branches.
+This repository currently contains the application/database foundation, staff authentication, and a database-backed public menu. Cart, checkout, and operational workflows are intentionally scheduled for later feature branches.
 
 ## Product scope
 
@@ -41,6 +41,10 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+The public catalog is available at `http://localhost:3000/menu`. It shows only published, non-archived catalog data; published sold-out dishes remain visible with a clear unavailable state.
+
+Customer-facing food imagery is stored locally under `public/images/hero` and `public/images/menu`. The homepage preloads only its above-the-fold hero; menu images use responsive `next/image` sizing and lazy loading. Seeded `MenuItem.imageUrl` values are repository-local `/images/...` paths, and missing or invalid paths render an accessible visual fallback.
 
 On macOS/Linux, copy the environment template with `cp .env.example .env` instead. Replace the local-only database password in both relevant variables before starting PostgreSQL.
 
@@ -112,6 +116,7 @@ Route-specific code may be colocated beneath `src/app`. Shared business behavior
 - [Architecture](docs/ARCHITECTURE.md)
 - [Database design](docs/DATABASE.md)
 - [Application interfaces](docs/API.md)
+- [Public image assets](docs/IMAGE_ASSETS.md)
 - [Implementation roadmap](docs/TASKS.md)
 - [Architecture decisions](docs/DECISIONS.md)
 - [Testing strategy](docs/TESTING.md)

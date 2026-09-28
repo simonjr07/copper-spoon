@@ -25,6 +25,7 @@ Tests should protect money calculations, snapshot history, order transactions, s
 - Bcrypt verification and cost-12 hashing
 - Current-database ACTIVE-user resolution for stale JWT defense
 - ADMIN/STAFF capability policy and development provisioning guards
+- Public category/item visibility, deterministic catalog ordering, sold-out display policy, search/category filtering, detail visibility, option filtering, safe local image-path exposure, and integer-cent formatting
 
 Pure business behavior should be separated from framework code for fast deterministic tests.
 
@@ -74,7 +75,7 @@ Use factories with explicit fictional names/domains/phone ranges. Tests must not
 
 ## 6. Quality gate evolution
 
-Current authentication gate: Prisma validate/generate when relevant, `npm test`, lint, typecheck, build, and diff check. The authentication unit suite uses repository boundaries and real bcrypt without mutating PostgreSQL; database wiring is type/build checked. Database-dependent gates require the isolated Copper Spoon PostgreSQL service on host port 5433. When end-to-end support lands, add a separate `test:e2e` gate and keep browser artifacts out of Git.
+Current feature gate: Prisma validate/generate when relevant, `npm test`, lint, typecheck, build, and diff check. Authentication and public-catalog suites exercise pure policies/repository boundaries without mutating PostgreSQL; database wiring is type/build checked. Database-dependent gates require the isolated Copper Spoon PostgreSQL service on host port 5433. When end-to-end support lands, add a separate `test:e2e` gate and keep browser artifacts out of Git.
 
 Coverage thresholds may be introduced after meaningful tests exist. Passing a percentage is never a substitute for covering the invariant list above.
 
@@ -83,3 +84,7 @@ Coverage thresholds may be introduced after meaningful tests exist. Passing a pe
 Every feature PR includes a short reproducible verification path. Before release, run keyboard-only flows, browser responsive checks, screen-reader spot checks, slow/error states, a clean-database migration/seed, and the hosted-demo smoke suite.
 
 For staff authentication, verify that anonymous `/admin` navigation redirects to `/admin/login`; unknown email, wrong password, and disabled account all show the same public failure; a provisioned active admin reaches the dashboard; sign-out returns to login; and changing the signed-in database user to `DISABLED` causes the next protected request to be rejected. Check the form with keyboard-only navigation and its password visibility, pending, and validation states.
+
+For the public menu, verify seeded category/item order, live name/description search, horizontal mobile category controls, keyboard focus, published sold-out treatment, responsive cards at 320 px and desktop widths, item detail options/pricing, back navigation, and a 404 for an unknown or unpublished slug. Temporarily unpublishing all categories/items in local development may be used to inspect both catalog empty states; restore with the idempotent seed.
+
+For imagery, inspect the homepage hero at mobile/desktop crops, confirm only the hero is preloaded, verify consistent card ratios and detail-page scaling, and temporarily set one local seed image path to a nonexistent `/images/menu/...` value to exercise the branded fallback without a broken-image icon. Restore the idempotent seed afterward.

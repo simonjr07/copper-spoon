@@ -50,6 +50,12 @@ Branch: `feat/public-menu`
 
 Depends on: Task 2.
 
+Status: implemented. `/menu` and `/menu/[slug]` use server-only cached Prisma reads, explicit public DTOs/publication policy, responsive search and category filtering, informational options, sold-out/empty/loading/not-found states, metadata, and focused catalog/money tests. Task 4B establishes the final image structure; Task 12 may refine presentation.
+
+### 4B. Food imagery and public visual identity
+
+Status: implemented. The homepage, menu cards, and detail route now use a cohesive repository-local WebP food-photography set through responsive `next/image`, safe public image-path DTOs, and a resilient branded fallback. Seed paths are idempotent; the existing schema required no migration. Task 12 may refine art direction but no longer needs to establish the image contract.
+
 ## 5. Cart
 
 Branch: `feat/cart`

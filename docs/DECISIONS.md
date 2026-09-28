@@ -82,6 +82,22 @@ This lightweight decision log records choices that materially constrain future w
 - Why: Critical money, quantity, option-bound, fulfilment, snapshot, and singleton rules should fail closed even if an application path is defective.
 - Consequence: Migration SQL is part of the data contract and must be reviewed whenever the Prisma schema changes; schema validation alone does not validate custom checks.
 
+## ADR-011: Public catalog visibility and caching
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Public catalog DTOs include only published categories and published, non-archived items. Published unavailable items remain visible as sold out. Inactive option groups and unavailable choices are omitted. Server-only Prisma reads use a five-minute cache plus `public-menu` / `restaurant-settings` tags.
+- Why: Guests need an honest view of recognizable dishes even during temporary sell-outs, while draft/archive/admin state must remain private. A short cache reduces repeated catalog reads without making availability indefinitely stale.
+- Consequence: Task 9 catalog/settings mutations must invalidate the relevant cache tags after commit. Order creation in Task 6 must independently re-read price/publication/availability and never trust the browse DTO or cached client state.
+
+## ADR-012: Repository-local generated food imagery
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Use one cohesive AI-generated editorial food-photography set, retain only optimized WebP derivatives under `public/images`, and reference menu assets through the existing optional `MenuItem.imageUrl`. Serve imagery with `next/image`; preload only the homepage hero and provide a branded fallback for missing images.
+- Why: Local generated assets avoid hotlink, licensing, availability, and remote-host configuration risks while establishing a stable image contract before cart work.
+- Consequence: New menu items need a descriptive local filename, safe `/images/menu/...` seed path, meaningful alt text, web optimization, and a visual review against the established shoot. Source generation prompts/mapping are recorded in `IMAGE_ASSETS.md`; a future replacement must preserve filenames or update seed data deliberately.
+
 ## Pending decisions
 
 | ID | Decision | Needed by |

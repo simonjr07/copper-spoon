@@ -32,7 +32,7 @@ The implemented database boundary uses stable Prisma ORM 7.10, `@prisma/adapter-
 ```text
 src/
   app/
-    (public)/              Public route group (introduced with public features)
+    menu/                  Public catalog list/detail routes
     admin/
       (protected)/         Protected dashboard route group
     api/                   Auth.js and explicit HTTP handlers
@@ -64,10 +64,12 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 
 ### Public menu read
 
-1. A Server Component calls a server-only menu query.
-2. The query returns an intentionally selected DTO, not an unrestricted model object.
-3. Cache policy/tag is explicit so admin availability edits can invalidate the menu.
-4. Only serializable, public fields cross a Client Component boundary.
+1. `/menu` and `/menu/[slug]` Server Components call the server-only public catalog module.
+2. Prisma selects only catalog/settings fields; a pure policy layer applies publication/archive checks and returns purpose-built DTOs.
+3. `unstable_cache` caches catalog reads for five minutes under `public-menu` and `restaurant-settings` tags. Task 9 mutations will revalidate those tags after commit.
+4. The list page passes only its public DTO to the narrow `MenuBrowser` Client Component for live search and category filtering. Item-detail reads and rendering remain server-side.
+5. Published unavailable items remain visible as sold out; unpublished/archived items, unpublished categories, inactive option groups, and unavailable choices are omitted.
+6. Public image paths are allowlisted to repository-local `/images/...` assets before crossing the server/client boundary. `MenuVisual` uses responsive `next/image` fill/sizes and switches to the branded fallback after a missing path or load error.
 
 ### Order creation
 
@@ -120,7 +122,8 @@ Operational events worth observing include login failures, denied authorization,
 
 - Stream route sections when it improves meaningful rendering; avoid client waterfalls.
 - Query only required columns and index frequent filters.
-- Optimize food imagery through `next/image` once assets exist.
+- Repository-local WebP food imagery is delivered through `next/image` with fixed-ratio containers to prevent layout shift. Only the homepage hero is preloaded; menu-card and detail images retain lazy loading.
+- Generated source PNGs remain outside the repository. The selected, optimized WebP derivatives and reproducible prompt/mapping notes are the maintained application assets.
 - Keep cart interactions local and responsive, with server reconciliation at checkout.
 - Build semantic HTML first and test keyboard, screen-reader naming, focus behavior, contrast, responsive layout, and reduced motion.
 

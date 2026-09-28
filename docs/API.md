@@ -4,7 +4,7 @@
 
 Copper Spoon is a first-party Next.js application, not a public API product. Server Components perform reads through server-only query functions. Server Actions handle UI mutations. Route Handlers are added only for Auth.js or when a stable HTTP interface is genuinely useful.
 
-All examples below are planned contracts, not implemented endpoints. The implementation may refine names while preserving the behavior and security properties.
+Unless marked implemented, examples below are planned contracts rather than HTTP endpoints. The implementation may refine names while preserving the behavior and security properties.
 
 ## 2. Boundary rules
 
@@ -19,8 +19,8 @@ All examples below are planned contracts, not implemented endpoints. The impleme
 
 | Query | Audience | Result |
 | --- | --- | --- |
-| `getPublicMenu` | Public | Active categories, available/menu-display items, option groups, settings needed to order |
-| `getPublicMenuItem` | Public | One public item by slug with selectable options |
+| `getPublicMenu` (implemented) | Public | Published categories and published/non-archived menu-display items plus safe restaurant display settings |
+| `getPublicMenuItem` (implemented) | Public | One published/non-archived item under a published category, with active groups and available choices |
 | `getOrderStatus` | Public bearer link | Minimal order snapshot and status by non-enumerable public ID |
 | `getDashboardSummary` | Admin/Staff | Operational counts and recent orders |
 | `listOrders` | Admin/Staff | Filtered, paginated order summaries |
@@ -89,6 +89,8 @@ The action accepts order ID, desired status, and an expected current status/vers
 - Customer status should not be cached across public identifiers.
 
 Caching policy will use the APIs documented by the installed Next.js version at implementation time.
+
+Implemented public catalog reads use a five-minute `unstable_cache` TTL and the `public-menu` / `restaurant-settings` tags. The future menu/settings mutations invalidate the relevant tag after a successful commit. Public list/detail DTOs contain display fields only and never expose publication flags, sort keys, archive state, timestamps, or other administrative metadata. A published item with `isAvailable=false` remains visible as sold out and is never presented as orderable.
 
 ## 9. Authentication interfaces
 
