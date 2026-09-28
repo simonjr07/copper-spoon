@@ -34,6 +34,8 @@ src/
   app/
     menu/                  Public catalog list/detail routes
     cart/                  Browser-persisted guest cart route
+    checkout/              Customer checkout route
+    order/[orderCode]/     Public bearer-code confirmation route
     admin/
       (protected)/         Protected dashboard route group
     api/                   Auth.js and explicit HTTP handlers
@@ -76,10 +78,11 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 
 1. Checkout submits a typed payload to a Server Action.
 2. Zod validates shape and conditional fulfilment/payment rules.
-3. The service loads active menu items/options and recalculates all prices.
-4. A PostgreSQL transaction creates the order, item snapshots, option snapshots, and initial status event.
-5. The service returns a safe result with order number and public tracking identifier.
-6. The action clears/updates client cart state and redirects to confirmation.
+3. A serializable PostgreSQL transaction first resolves the unique checkout token, then loads current restaurant settings and complete item/group/option records.
+4. Pure domain logic rejects disabled fulfilment/payment choices; unpublished, archived, sold-out, or hidden-category items; inactive/unavailable/wrong-item options; selection-bound violations; currency mismatches; and unmet delivery minimums.
+5. The service recalculates base, option, line, subtotal, delivery-fee, and total cents and creates the order, immutable item/option snapshots, and initial `PENDING` event through one nested write.
+6. A cryptographically random `CS-` code is retried on a uniqueness collision. A repeated checkout token returns the already-created public code rather than creating a duplicate order.
+7. The Client Component clears the browser cart only after success and navigates to a dynamic confirmation route that selects no contact/address/internal-ID fields.
 
 ### Guest cart
 
@@ -88,7 +91,7 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 3. A root React context/reducer owns cart actions so the header, detail configurator, and `/cart` route share state without a separate client store dependency.
 4. After client hydration, a versioned strict Zod schema restores `localStorage` data. Invalid, mixed-currency, unsafe-image, or unknown-version payloads fail closed to an empty cart; storage failures leave the in-memory cart usable.
 5. A line identity is the item ID plus sorted group/option IDs. Identical configurations merge quantities, while different choices remain separate lines.
-6. All cart content and totals remain untrusted convenience data. Task 6 sends item/option IDs and quantities and independently re-reads publication, availability, choices, and prices before an order can exist.
+6. All cart content and totals remain untrusted convenience data. Checkout sends only item/option IDs and quantities; order creation independently re-reads publication, availability, choices, settings, and prices before an order can exist.
 
 ### Staff mutation
 

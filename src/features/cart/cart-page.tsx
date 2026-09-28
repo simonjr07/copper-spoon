@@ -189,13 +189,12 @@ export function CartPageContent() {
           <p className="mt-5 text-sm leading-6 text-white/65">
             This cart is a convenience estimate. Current items, choices, availability, and prices will be revalidated by the server at checkout.
           </p>
-          <button
-            className="mt-6 w-full cursor-not-allowed rounded-full bg-white/12 px-5 py-3.5 text-sm font-semibold text-white/55"
-            disabled
-            type="button"
+          <Link
+            className="mt-6 flex w-full justify-center rounded-full bg-[#f5e8db] px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            href="/checkout"
           >
-            Checkout arrives in Task #6
-          </button>
+            Proceed to checkout
+          </Link>
           <Link
             className="mt-4 flex justify-center rounded-md text-sm font-semibold text-[#f4ceb5] underline decoration-[#f4ceb5]/30 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-white"
             href="/menu"

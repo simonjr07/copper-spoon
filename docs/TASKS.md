@@ -60,7 +60,7 @@ Status: implemented. The homepage, menu cards, and detail route now use a cohesi
 
 Branch: `feat/cart`
 
-Status: implemented. Available item details enforce active option-group selection bounds before adding a configuration. A versioned, schema-validated browser cart supports distinct configurations, quantity changes, removal, responsive item imagery, integer-cent line/subtotal estimates, an accessible global count, and empty/loading states. Checkout remains disabled until Task 6 re-reads the catalog and creates orders server-side.
+Status: implemented. Available item details enforce active option-group selection bounds before adding a configuration. A versioned, schema-validated browser cart supports distinct configurations, quantity changes, removal, responsive item imagery, integer-cent line/subtotal estimates, an accessible global count, and empty/loading states. Checkout re-reads the catalog before persisting an order.
 
 - Implement item customization rules, cart add/edit/remove, quantity controls, persisted local cart, money utilities, and accessible feedback.
 - Treat displayed client totals as estimates pending checkout revalidation.
@@ -71,6 +71,8 @@ Depends on: Task 4.
 ## 6. Checkout and order creation
 
 Branch: `feat/checkout`
+
+Status: implemented. `/checkout` validates contact/fulfilment/address/demo-payment input, uses unique checkout tokens for retry idempotency, and performs server-authoritative catalog/settings validation and integer-cent repricing inside a serializable transaction. The nested write creates immutable item/option snapshots plus the initial `PENDING` event. `/order/[orderCode]` returns a confirmation-safe DTO by a high-entropy public code; no real payment or card data is collected.
 
 - Build contact, fulfilment, address, note, and simulated-payment forms.
 - Add Zod validation, server repricing, idempotency protection, atomic snapshot creation, and confirmation.

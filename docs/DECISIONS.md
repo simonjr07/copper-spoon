@@ -104,7 +104,15 @@ This lightweight decision log records choices that materially constrain future w
 - Date: 2026-09-28
 - Decision: Keep the pre-checkout guest cart in a small React context/reducer and persist a versioned, strictly validated display snapshot in `localStorage`. Use item plus sorted option IDs as configuration identity and integer cents for estimates.
 - Why: Guests get fast cross-page cart behavior without accounts, database writes, or another state dependency, while corrupt/stale browser data can be discarded safely.
-- Consequence: The cart is device/browser-local and can become stale. Stored names, prices, images, availability, and totals are never trusted by order creation; Task 6 must re-read all referenced catalog records, revalidate selection bounds, reprice, and create snapshots atomically.
+- Consequence: The cart is device/browser-local and can become stale. Stored names, prices, images, availability, and totals are never trusted by order creation; checkout re-reads all referenced catalog records, revalidates selection bounds, reprices, and creates snapshots atomically.
+
+## ADR-014: Serializable, idempotent checkout transaction
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Execute settings/catalog reads, authoritative repricing, and nested order/snapshot/event creation in one serializable Prisma transaction. Use a client-generated UUID protected by a nullable unique `Order.checkoutToken`, plus a 50-bit cryptographically random `CS-` public code.
+- Why: The browser cart can be stale or hostile, concurrent catalog changes must not create mixed snapshots, lost responses must be safely retryable, and customers must never receive an internal database identifier.
+- Consequence: Uniqueness and serialization conflicts retry up to four complete transactions. Existing rows can retain a null checkout token. Task 13 still adds request-rate limiting and hosted retention; Task 7 expands the bearer-code route into an order-status experience.
 
 ## Pending decisions
 

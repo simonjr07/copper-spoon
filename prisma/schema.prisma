@@ -136,6 +136,7 @@ model MenuItemOption {
 
 model Order {
   id                   String             @id @default(cuid())
+  checkoutToken        String?            @unique @db.VarChar(64)
   publicCode           String             @unique @db.VarChar(16)
   status               OrderStatus        @default(PENDING)
   fulfilmentType       FulfilmentType

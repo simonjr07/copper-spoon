@@ -2,7 +2,7 @@
 
 Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It will combine a responsive customer ordering experience with a role-protected restaurant operations dashboard.
 
-This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, and a browser-persisted guest cart. Checkout and operational workflows are intentionally scheduled for later feature branches.
+This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, a browser-persisted guest cart, and authoritative pickup/delivery checkout with fictional order confirmation. Staff operational workflows are scheduled for later feature branches.
 
 ## Product scope
 
@@ -44,7 +44,7 @@ Open `http://localhost:3000`.
 
 The public catalog is available at `http://localhost:3000/menu`. It shows only published, non-archived catalog data; published sold-out dishes remain visible with a clear unavailable state.
 
-Available dishes can be configured on their detail pages and added to `http://localhost:3000/cart`. The cart is stored locally in the browser, uses integer-cent estimates, and creates no database records. Checkout is intentionally disabled until Task 6 adds server-side catalog revalidation and atomic order creation.
+Available dishes can be configured on their detail pages and added to `http://localhost:3000/cart`. The cart is stored locally in the browser and uses integer-cent estimates. `/checkout` accepts fictional pickup/delivery orders, re-reads the current catalog and restaurant settings, recalculates every amount server-side, and atomically stores immutable order snapshots. Confirmation is available only through the generated non-sequential `CS-…` public code. No real card details or payment processing are used.
 
 Customer-facing food imagery is stored locally under `public/images/hero` and `public/images/menu`. The homepage preloads only its above-the-fold hero; menu images use responsive `next/image` sizing and lazy loading. Seeded `MenuItem.imageUrl` values are repository-local `/images/...` paths, and missing or invalid paths render an accessible visual fallback.
 

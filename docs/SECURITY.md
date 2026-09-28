@@ -40,7 +40,8 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Reprice orders from database records and use a transaction for order/items/options/events.
 - Use Prisma parameterization; raw SQL requires a documented need and parameter binding.
 - Limit quantities, note lengths, item counts, and request sizes to control abuse.
-- Add idempotency/replay protection to checkout and optimistic concurrency to status updates.
+- Maintain checkout idempotency/replay protection and add optimistic concurrency to status updates.
+- Checkout now uses a unique UUID submission token, bounded cart identifiers/quantities, current-record validation, server-only repricing, and a serializable transaction. Task 13 still adds request-rate limiting.
 - Enforce state-machine transitions server-side.
 
 ## 6. Data protection
@@ -48,6 +49,7 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Collect only name, email, phone, necessary delivery address, fulfilment details, and an optional note.
 - Never collect card numbers/CVV; `DEMO_CARD` is visibly simulated.
 - Public status responses hide unnecessary contact/address fields and use a high-entropy identifier.
+- The implemented confirmation query accepts only a database-format `CS-` bearer code and selects snapshots/status/totals without customer contact, delivery address, internal IDs, staff data, or notes.
 - Logs redact passwords, session/cookie values, connection strings, authorization headers, and customer contact/address data.
 - Define hosted-demo retention and periodic purge/redaction before deployment.
 - Backups, if enabled, inherit the same access/retention expectations.

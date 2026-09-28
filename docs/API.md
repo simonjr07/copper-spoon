@@ -21,6 +21,7 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 | --- | --- | --- |
 | `getPublicMenu` (implemented) | Public | Published categories and published/non-archived menu-display items plus safe restaurant display settings |
 | `getPublicMenuItem` (implemented) | Public | One published/non-archived item under a published category, with active groups and available choices |
+| `getPublicOrderConfirmation` (implemented) | Public bearer code | Confirmation-safe order/item/option snapshots and totals by non-sequential public code; no contact/address/internal IDs |
 | `getOrderStatus` | Public bearer link | Minimal order snapshot and status by non-enumerable public ID |
 | `getDashboardSummary` | Admin/Staff | Operational counts and recent orders |
 | `listOrders` | Admin/Staff | Filtered, paginated order summaries |
@@ -33,7 +34,7 @@ Unless marked implemented, examples below are planned contracts rather than HTTP
 
 | Action | Authorization | Key behavior |
 | --- | --- | --- |
-| `createOrder` | Public, rate-limited | Validate checkout, reprice, transactionally create snapshots/event |
+| `createOrder` (implemented; rate limit pending) | Public | Validate checkout, resolve idempotency token, reprice, transactionally create snapshots/event |
 | `updateOrderStatus` | Admin/Staff | Check allowed transition and concurrency; append event |
 | `createCategory` / `updateCategory` | Admin | Validate slug/order/active state; revalidate menu |
 | `createMenuItem` / `updateMenuItem` | Admin | Validate price/category/options; revalidate menu |
@@ -70,18 +71,18 @@ There is no generic public menu/order CRUD REST API in the initial plan. If exte
 
 ## 6. Public order creation contract
 
-Client input contains item IDs, option IDs, quantities, customer/fulfilment fields, payment choice, and an optional note. It does not contain authoritative unit prices or totals. The server returns either:
+Client input contains a random checkout token, item IDs, option IDs, quantities, customer/fulfilment fields, and payment choice. It does not contain authoritative unit prices or totals. Unknown cart fields are discarded by the Zod schema. The server returns either:
 
 - an order number and non-enumerable public status identifier; or
 - a structured validation/conflict response explaining changed availability or pricing.
 
-Repeated submission protection should use a short-lived idempotency key or equivalent server-side guard. The exact mechanism is finalized with checkout.
+Repeated submission protection uses a client-generated UUID stored as nullable unique `Order.checkoutToken`. The serializable transaction returns an existing public code when the token has already committed; a uniqueness race retries and then resolves the same order. The submit button also remains disabled while its Server Action is pending.
 
 ### Implemented client cart contract
 
 The cart is not an HTTP or database interface. The browser stores a versioned payload under `copper-spoon:cart` containing item display snapshots, selected option display snapshots, quantities, and estimated integer-cent prices. A strict schema limits lengths/counts, allows only repository-local image paths, rejects mixed currencies, and reconstructs configuration identities during hydration.
 
-Cart actions support add/merge, bounded quantity change, removal, and clear. This payload is never authoritative: Task 6 must submit identifiers and quantities, discard stored prices/names/totals as authority, and reject the whole checkout when current publication, availability, option membership, bounds, or currency no longer match.
+Cart actions support add/merge, bounded quantity change, removal, and clear. This payload is never authoritative: checkout submits identifiers and quantities, discards stored prices/names/totals as authority, and rejects the whole checkout when current publication, availability, option membership, bounds, or currency no longer match.
 
 ## 7. Status transition contract
 

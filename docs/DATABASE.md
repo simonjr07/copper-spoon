@@ -56,10 +56,11 @@ Belongs to an option group and contains a name, non-negative price adjustment in
 
 ### `Order`
 
-Contains internal ID, unique `publicCode`, lifecycle/payment/fulfilment state, customer contact, snapshotted delivery address, customer note, currency, subtotal/delivery/total cents, operational timestamps, items, and status events.
+Contains internal ID, nullable unique `checkoutToken`, unique `publicCode`, lifecycle/payment/fulfilment state, customer contact, snapshotted delivery address, customer note, currency, subtotal/delivery/total cents, operational timestamps, items, and status events. New checkout orders use a UUID checkout token for retry idempotency; null preserves compatibility with earlier/administratively-created rows.
 
 Database checks require:
 
+- a version-4 UUID shape when `checkoutToken` is present;
 - normalized customer email;
 - a complete line 1/city/postal code/country snapshot for delivery;
 - pay-on-pickup only with pickup and pay-on-delivery only with delivery;
@@ -114,15 +115,17 @@ Historical display and analytics must never join current catalog pricing to reca
 
 ## 7. Transactional order creation contract
 
-The later checkout service will, in one database transaction:
+The implemented checkout service performs, in one serializable database transaction:
 
-1. Load and validate current settings, published/available items, and valid options.
-2. Calculate all cents values on the server.
-3. Generate and reserve a unique non-sequential public code.
-4. Create the order and immutable item/option snapshots.
-5. Create the initial `PENDING` status event.
+1. Resolve an existing unique checkout token for idempotent retries.
+2. Load and validate current settings, published/available items, and valid options.
+3. Calculate all cents values on the server, including the current settings delivery fee.
+4. Generate and reserve a cryptographically random non-sequential public code, retrying uniqueness/serialization conflicts.
+5. Create the order, immutable item/option snapshots, and initial `PENDING` status event through one nested write.
 
 Stale or unavailable cart data rejects the whole operation. Client-provided prices/totals are ignored.
+
+Migration `20260928000000_order_checkout_idempotency` adds only the nullable checkout token, its UUID-format check, and unique index. No catalog or historical-order data is rewritten.
 
 ## 8. Indexes
 
