@@ -1,0 +1,6 @@
+src/app/admin/(protected)/menu/categories/[id]/edit/page.tsx:9: new blank line at EOF.
+src/app/admin/(protected)/menu/categories/new/page.tsx:7: new blank line at EOF.
+src/app/admin/(protected)/menu/categories/page.tsx:8: new blank line at EOF.
+src/app/admin/(protected)/menu/items/[id]/edit/page.tsx:9: new blank line at EOF.
+src/app/admin/(protected)/menu/items/new/page.tsx:8: new blank line at EOF.
+src/app/admin/(protected)/menu/page.tsx:21: new blank line at EOF.
