@@ -118,6 +118,14 @@ Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers
 4. Successful writes immediately expire only the `public-menu` tag and revalidate the relevant admin route. Failed writes never invalidate the cache. Public catalog policy continues to hide unpublished categories/items and archived items while retaining published unavailable items as sold out.
 5. Catalog tables and order snapshot tables are never updated together. Existing `OrderItem` and `OrderItemOption` snapshot names/prices therefore remain immutable when current catalog data changes.
 
+### Staff-account administration
+
+1. `/admin/users` and every account mutation independently require the admin-only `staff:manage` capability. Staff cannot access the list, edit routes, or direct Server Actions.
+2. Zod normalizes email, validates role/status identifiers, and reuses the 12–72-byte strong-password policy. Passwords are hashed with bcrypt cost 12 before persistence and never enter a response DTO.
+3. Profile, role, and status changes load the target in a serializable transaction. Removing an active admin counts active admins inside that same transaction and fails when only one remains; PostgreSQL serialization conflicts surface as safe retry messages.
+4. Self-service in this workflow is deliberately narrow: an admin may edit their own name/email, but cannot change their own role/status or use the admin-driven password-replacement action on themselves.
+5. User queries allowlist identity, role/status, and operational timestamps. `passwordHash` is selected only by credential verification and written only by creation/reset code.
+
 ## 5. Authentication and authorization
 
 Auth.js v5 credentials authentication verifies bcrypt cost-12 hashes for active users only. It uses encrypted JWT sessions with an eight-hour maximum age and Auth.js-managed secure cookie behavior. The session exposes only safe user identity, role, and status; it never serializes `passwordHash`.

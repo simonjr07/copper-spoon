@@ -138,6 +138,14 @@ This lightweight decision log records choices that materially constrain future w
 - Why: Catalog relationships and historical orders need stable references, sold-out dishes should remain discoverable, and operators need public changes to appear immediately without clearing unrelated site/settings caches.
 - Consequence: Admin forms expose lifecycle toggles and an explicit archive confirmation. Active option selection bounds cannot exceed available choices. Catalog mutations never update order-owned snapshots, and `restaurant-settings` is not invalidated by catalog-only changes.
 
+## ADR-018: Transactional staff lifecycle and strict self-protection
+
+- Status: Accepted and implemented
+- Date: 2026-09-28
+- Decision: Staff accounts are disabled rather than deleted. Removing an active admin role/status is guarded inside a serializable transaction so at least one active admin remains. Admins may edit their own name/email but cannot change their own role/status or use the admin password-replacement path on themselves.
+- Why: History-bearing actor references and operational recovery require durable accounts, while strict self-controls reduce accidental lockout. Serializable isolation prevents concurrent count-then-update write skew.
+- Consequence: Another active admin is required for an admin's demotion, disablement, or controlled password replacement. Self-password recovery remains a separate future operational process. Database serialization conflicts require a fresh review/retry.
+
 ## Pending decisions
 
 | ID | Decision | Needed by |

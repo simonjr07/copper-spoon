@@ -80,6 +80,9 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 
 - Users receive safe validation or generic failure messages, never stack traces, SQL, internal IDs, or secret configuration.
 - Security-relevant events include repeated login failures, denied capabilities, provisioning, staff-role/status changes, invalid transitions, and unusual order rates.
+- Staff-management pages and Server Actions require `staff:manage`; a `STAFF` caller is rejected server-side. Account DTOs explicitly omit `passwordHash`, and plaintext passwords are neither logged nor returned.
+- Email is normalized before the database's unique constraint. Creation and admin-driven replacement reuse the strong password policy and bcrypt cost 12. Existing passwords are never displayed.
+- Self-disable and self-role changes are forbidden. Last-active-admin demotion/disable checks and writes share a serializable transaction; account deletion is not exposed. Disabled sessions fail the next database-backed active-user authorization check.
 - Audit records should identify actor/action/target/time without capturing secrets or excessive PII.
 
 ## 10. Dependency and delivery security

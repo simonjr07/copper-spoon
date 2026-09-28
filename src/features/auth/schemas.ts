@@ -18,16 +18,18 @@ export const loginCredentialsSchema = z.object({
     .refine(fitsBcryptLimit, "Password is too long."),
 });
 
+export const strongPasswordSchema = z
+  .string()
+  .min(12)
+  .refine(fitsBcryptLimit, "Password must be at most 72 UTF-8 bytes.")
+  .regex(/[A-Za-z]/, "Password must contain a letter.")
+  .regex(/[0-9]/, "Password must contain a number.")
+  .regex(/[^A-Za-z0-9]/, "Password must contain a symbol.");
+
 export const adminProvisionSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
-  password: z
-    .string()
-    .min(12)
-    .refine(fitsBcryptLimit, "Password must be at most 72 UTF-8 bytes.")
-    .regex(/[A-Za-z]/, "Password must contain a letter.")
-    .regex(/[0-9]/, "Password must contain a number.")
-    .regex(/[^A-Za-z0-9]/, "Password must contain a symbol."),
+  password: strongPasswordSchema,
 });
 
 export type LoginCredentials = z.infer<typeof loginCredentialsSchema>;
