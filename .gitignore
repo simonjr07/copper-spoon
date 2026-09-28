@@ -30,8 +30,17 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# environment and secrets (the documented template is safe to commit)
+.env
+.env.*
+!.env.example
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+credentials.json
+secrets.*
 
 # vercel
 .vercel
@@ -39,3 +48,24 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local databases and Prisma artifacts
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+/prisma/dev.db*
+/src/generated/prisma/
+
+# test and tooling output
+/test-results/
+/playwright-report/
+/.vitest/
+/.turbo/
+
+# editor and local tooling
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.swp
+Thumbs.db

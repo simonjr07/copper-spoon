@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Copper Spoon
 
-## Getting Started
+Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It will combine a responsive customer ordering experience with a role-protected restaurant operations dashboard.
 
-First, run the development server:
+This repository currently contains the application and PostgreSQL/Prisma database foundations. Ordering, authentication, and dashboard features are intentionally scheduled for later feature branches.
+
+## Product scope
+
+- Public menu browsing, item customization, cart, checkout, confirmation, and order tracking
+- Staff order processing with `ADMIN` and `STAFF` authorization
+- Menu, category, availability, settings, staff, and analytics administration
+- Simulated payment methods only; no real payment processing or real customer data
+- One restaurant; no marketplace, customer accounts, drivers, loyalty, or reservations
+
+See [Product Requirements](docs/PRODUCT_REQUIREMENTS.md) and [Tasks](docs/TASKS.md) for the complete scope.
+
+## Technology
+
+- Next.js 16 App Router, React 19, TypeScript, and Tailwind CSS 4
+- PostgreSQL 17 with Prisma ORM 7 and the PostgreSQL driver adapter
+- Auth.js credentials authentication, bcrypt, and Zod validation
+- Vitest for unit and integration tests
+- Docker PostgreSQL for local development, Neon for the hosted demo, and Vercel for the app (subject to deployment validation)
+
+## Requirements
+
+- Node.js 24 LTS (see `.nvmrc`)
+- npm 11+
+- Docker Desktop with Compose
+
+## Local setup
 
 ```bash
+nvm use
+npm ci
+Copy-Item .env.example .env
+docker compose up -d postgres
+npm run db:migrate
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+On macOS/Linux, copy the environment template with `cp .env.example .env` instead. Replace the local-only database password in both relevant variables before starting PostgreSQL.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copper Spoon binds PostgreSQL only to `127.0.0.1:5433`; PostgreSQL continues to listen on port `5432` inside the container.
 
-## Learn More
+Generate a unique `AUTH_SECRET` in the ignored `.env` before using staff authentication. No staff user is seeded and there is no registration route.
 
-To learn more about Next.js, take a look at the following resources:
+## Development admin provisioning
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Provision an initial local admin only after the database migration is applied. Supply all values through the current shell; do not add real credentials to `.env.example` or Git.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+PowerShell:
 
-## Deploy on Vercel
+```powershell
+$env:NODE_ENV = "development"
+$env:ADMIN_PROVISION_NAME = "Fictional Demo Admin"
+$env:ADMIN_PROVISION_EMAIL = "admin@copperspoon.example"
+$env:ADMIN_PROVISION_PASSWORD = "choose-a-unique-local-password"
+npm run admin:provision
+Remove-Item Env:ADMIN_PROVISION_PASSWORD
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The password must be 12–72 UTF-8 bytes and contain a letter, number, and symbol. The command uses bcrypt cost 12, creates an `ACTIVE` `ADMIN`, refuses to run outside development, and refuses to change an existing account with the same normalized email. It never prints the password and is never run automatically.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Database commands
+
+```bash
+npm run db:validate   # validate the Prisma schema
+npm run db:generate   # regenerate the ignored Prisma Client output
+npm run db:migrate    # create/apply development migrations
+npm run db:deploy     # apply existing migrations without creating new ones
+npm run db:status     # inspect migration state
+npm run db:seed       # upsert fictional development catalog data
+npm run db:smoke      # query settings/category/item counts
+```
+
+## Quality checks
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm test
+git diff --check
+```
+
+The production build does not run ESLint in Next.js 16, so lint and type checking remain explicit CI gates.
+
+## Repository map
+
+```text
+docs/                 Product, architecture, operations, and delivery guidance
+public/               Static public assets
+src/app/              App Router routes, layouts, and route handlers
+src/components/       Reusable cross-feature UI
+src/features/         Feature-owned UI, schemas, actions, and domain helpers
+src/lib/              Shared framework-agnostic utilities
+src/server/           Server-only auth, data access, and services
+src/types/            Shared TypeScript declarations
+tests/                 Cross-feature integration and test support
+prisma/                Schema, migrations, fictional seed, and DB smoke check
+```
+
+Route-specific code may be colocated beneath `src/app`. Shared business behavior belongs in feature or server modules rather than route files.
+
+## Documentation
+
+- [Product requirements](docs/PRODUCT_REQUIREMENTS.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Database design](docs/DATABASE.md)
+- [Application interfaces](docs/API.md)
+- [Implementation roadmap](docs/TASKS.md)
+- [Architecture decisions](docs/DECISIONS.md)
+- [Testing strategy](docs/TESTING.md)
+- [Security model](docs/SECURITY.md)
+- [Deployment plan](docs/DEPLOYMENT.md)
+- [Definition of done](docs/DEFINITION_OF_DONE.md)
+
+## Workflow
+
+Keep `main` releasable. Develop each roadmap task on a `codex/<task-name>` or `feat/<task-name>` branch, open a focused pull request, pass quality gates, review, and merge. Do not commit credentials, production data, generated output, or local environment files.
+
+All names, menu content, users, orders, and contact details used in this project must be obviously fictional.
