@@ -133,6 +133,8 @@ Branch: `feat/settings-analytics`
 - Add basic period/order/status aggregates using persisted order values and documented cancellation policy.
 - Test timezone and boundary calculations.
 
+Status: dashboard analytics implemented. `/admin` now gives active staff and admins fresh operational counts, all-status distribution, restaurant-local seven-day activity, recent order links, fulfilment split, and immutable-snapshot popular items through a dedicated server-only repository and minimal DTO. Restaurant-settings editing remains separate work within this roadmap item.
+
 Depends on: Tasks 8–10.
 
 ## 12. Frontend polish and responsive UX
@@ -141,6 +143,8 @@ Branch: `feat/ux-polish`
 
 - Refine design system, imagery, navigation, responsive layouts, skeleton/empty/error states, micro-interactions, and dashboard density.
 - Preserve performance and reduced-motion behavior; avoid generic-template styling.
+
+Status: implemented. Public ordering and private operations now share a refined local visual system, visible focus behavior, reduced-motion support, responsive cards/forms/navigation, active admin navigation, safe route error recovery, richer loading/empty states, and appropriate private-flow indexing controls. No business semantics, heavy UI library, or animation dependency was added.
 
 Depends on: feature-complete flows.
 

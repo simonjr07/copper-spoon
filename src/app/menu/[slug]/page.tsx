@@ -42,7 +42,7 @@ export default async function MenuItemPage({ params }: MenuItemPageProps) {
   return (
     <>
       <PublicHeader />
-      <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12 lg:px-12 lg:py-16">
+      <main className="page-container py-8 sm:py-12 lg:py-16" id="main-content" tabIndex={-1}>
         <Link
           className="inline-flex rounded-md text-sm font-semibold text-muted underline decoration-copper/40 underline-offset-4 transition hover:text-copper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-copper"
           href="/menu"
@@ -52,7 +52,7 @@ export default async function MenuItemPage({ params }: MenuItemPageProps) {
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1.04fr)_minmax(22rem,0.96fr)] lg:gap-16">
           <MenuVisual
-            className="aspect-[4/3] w-full rounded-[2rem] shadow-[0_30px_80px_-45px_rgba(45,27,20,0.8)] lg:sticky lg:top-8"
+            className="aspect-[4/3] w-full rounded-[2rem] shadow-[0_30px_80px_-45px_rgba(45,27,20,0.8)] lg:sticky lg:top-24"
             imageUrl={item.imageUrl}
             name={item.name}
             sizes="(max-width: 1024px) calc(100vw - 2.5rem), 52vw"

@@ -6,7 +6,7 @@ export default function OrderNotFound() {
   return (
     <>
       <PublicHeader />
-      <main className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8">
+      <main className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8" id="main-content" tabIndex={-1}>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-copper">
             Order unavailable

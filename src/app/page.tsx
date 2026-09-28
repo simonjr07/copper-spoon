@@ -28,7 +28,7 @@ export default function Home() {
   return (
     <>
       <PublicHeader />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <section className="overflow-hidden bg-[#f7f1e8]">
           <div className="mx-auto grid min-h-[calc(100vh-73px)] w-full max-w-[90rem] items-center gap-10 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-[0.82fr_1.18fr] lg:gap-12 lg:px-12 lg:py-16">
             <div className="relative z-1 max-w-2xl py-4 lg:py-12">
@@ -41,9 +41,9 @@ export default function Home() {
               <p className="mt-7 max-w-xl text-base leading-8 text-muted sm:text-lg">
                 Copper Spoon brings familiar dishes, seasonal produce, and an easygoing dining spirit to one modern fictional kitchen.
               </p>
-              <div className="mt-9 flex flex-wrap items-center gap-4">
+              <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                 <Link
-                  className="inline-flex rounded-full bg-ink px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_36px_-20px_rgba(45,27,20,0.75)] transition hover:bg-copper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-copper"
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-ink px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_36px_-20px_rgba(45,27,20,0.75)] transition hover:bg-copper sm:w-auto"
                   href="/menu"
                 >
                   Browse the menu

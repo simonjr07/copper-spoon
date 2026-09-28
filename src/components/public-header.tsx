@@ -4,8 +4,9 @@ import { CartLink } from "@/features/cart/cart-link";
 
 export function PublicHeader() {
   return (
-    <header className="border-b border-[#3e2920]/10 bg-[#fffaf2]/90 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
+    <header className="sticky top-0 z-30 border-b border-[#3e2920]/10 bg-[#fffaf2]/92 backdrop-blur-md">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+      <div className="page-container flex min-h-[4.5rem] items-center justify-between gap-3 py-3">
         <Link
           className="group inline-flex items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-copper"
           href="/"
@@ -26,9 +27,9 @@ export function PublicHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Primary navigation" className="flex items-center gap-2">
+        <nav aria-label="Primary navigation" className="flex shrink-0 items-center gap-1 sm:gap-2">
           <Link
-            className="rounded-md px-1 py-2 text-sm font-semibold text-ink transition hover:text-copper focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-copper"
+            className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-ink transition hover:text-copper"
             href="/track-order"
           >
             Track

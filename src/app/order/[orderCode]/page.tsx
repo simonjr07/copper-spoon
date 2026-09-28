@@ -31,6 +31,7 @@ export async function generateMetadata({
       ? `Order ${normalizedCode} | Copper Spoon`
       : "Order status | Copper Spoon",
     description: "View the latest customer-safe status for a fictional Copper Spoon order.",
+    robots: { index: false, follow: false },
   };
 }
 
@@ -61,7 +62,7 @@ export default async function OrderStatusPage({ params }: OrderStatusPageProps) 
   return (
     <>
       <PublicHeader />
-      <main className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-16 lg:px-12">
+      <main className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-16 lg:px-12" id="main-content" tabIndex={-1}>
         <section
           className={`overflow-hidden rounded-[1.75rem] shadow-[0_28px_80px_-55px_rgba(45,27,20,0.75)] ${
             isCancelled
@@ -99,7 +100,7 @@ export default async function OrderStatusPage({ params }: OrderStatusPageProps) 
             <dl className="mt-8 grid gap-5 border-t border-white/12 pt-6 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <dt className="text-xs uppercase tracking-[0.14em] text-white/50">Order code</dt>
-                <dd className="mt-1 break-all font-mono text-lg font-semibold text-[#f4ceb5]">
+                <dd className="mt-1 break-words font-mono text-lg font-semibold tracking-[0.04em] text-[#f4ceb5]">
                   {order.publicCode}
                 </dd>
               </div>

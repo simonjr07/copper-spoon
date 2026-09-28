@@ -26,7 +26,7 @@ export function MenuBrowser({ menu }: { menu: PublicMenu }) {
     <>
       <section
         aria-label="Menu filters"
-        className="sticky top-0 z-10 -mx-5 border-y border-[#3e2920]/10 bg-[#f7f1e8]/95 px-5 py-4 backdrop-blur sm:-mx-8 sm:px-8 lg:mx-0 lg:rounded-2xl lg:border lg:px-5"
+        className="sticky top-[4.5rem] z-20 -mx-5 border-y border-[#3e2920]/10 bg-[#f7f1e8]/95 px-5 py-4 shadow-[0_12px_30px_-28px_rgba(45,27,20,0.75)] backdrop-blur sm:-mx-8 sm:px-8 lg:mx-0 lg:rounded-2xl lg:border lg:px-5"
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 overflow-x-auto pb-1">
@@ -58,7 +58,7 @@ export function MenuBrowser({ menu }: { menu: PublicMenu }) {
               ⌕
             </span>
             <input
-              className="w-full rounded-full border border-[#3e2920]/15 bg-white py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-muted/75 focus:border-copper focus:ring-2 focus:ring-copper/20"
+              className="min-h-11 w-full rounded-full border border-[#3e2920]/15 bg-white py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-muted/75 focus:border-copper focus:ring-2 focus:ring-copper/20"
               id="menu-search"
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search dishes and ingredients"

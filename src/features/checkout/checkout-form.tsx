@@ -84,7 +84,7 @@ export function CheckoutForm({
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-12">
+    <main className="page-container py-10 sm:py-14" id="main-content" tabIndex={-1}>
       <div className="max-w-3xl">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-copper">
           Secure demo checkout
@@ -234,7 +234,7 @@ export function CheckoutForm({
           </FormSection>
         </div>
 
-        <aside className="rounded-[1.4rem] bg-[#35241d] p-6 text-white shadow-[0_28px_70px_-45px_rgba(45,27,20,0.85)] lg:sticky lg:top-6">
+        <aside className="rounded-[1.4rem] bg-[#35241d] p-5 text-white shadow-[0_28px_70px_-45px_rgba(45,27,20,0.85)] sm:p-6 lg:sticky lg:top-24">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e6ad87]">
             Review order
           </p>
@@ -473,7 +473,7 @@ function getDefaultPayment(
 
 function CheckoutLoading() {
   return (
-    <main className="mx-auto min-h-[70vh] w-full max-w-7xl animate-pulse px-5 py-10 sm:px-8 lg:px-12">
+    <main aria-busy="true" className="mx-auto min-h-[70vh] w-full max-w-7xl animate-pulse px-5 py-10 sm:px-8 lg:px-12" id="main-content" tabIndex={-1}>
       <div className="h-4 w-32 rounded-full bg-line" />
       <div className="mt-5 h-12 w-72 rounded-xl bg-line/70" />
       <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_23rem]">
@@ -487,7 +487,7 @@ function CheckoutLoading() {
 
 function EmptyCheckout() {
   return (
-    <main className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8">
+    <main className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8" id="main-content" tabIndex={-1}>
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-copper">
           Nothing to check out

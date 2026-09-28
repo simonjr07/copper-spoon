@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Checkout | Copper Spoon",
   description: "Confirm a fictional Copper Spoon pickup or delivery order.",
+  robots: { index: false, follow: false },
 };
 
 export default async function CheckoutPage() {
@@ -22,7 +23,7 @@ export default async function CheckoutPage() {
       {settings && (settings.pickupEnabled || settings.deliveryEnabled) ? (
         <CheckoutForm settings={settings} submissionToken={randomUUID()} />
       ) : (
-        <main className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8">
+        <main className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8" id="main-content" tabIndex={-1}>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-copper">
               Ordering paused

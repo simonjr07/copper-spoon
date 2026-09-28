@@ -8,6 +8,7 @@ import { normalizePublicOrderCode } from "@/features/order-status/order-status";
 export const metadata: Metadata = {
   title: "Track an order | Copper Spoon",
   description: "Open a fictional Copper Spoon order using its public order code.",
+  robots: { index: false, follow: false },
 };
 
 type TrackOrderPageProps = {
@@ -30,7 +31,7 @@ export default async function TrackOrderPage({ searchParams }: TrackOrderPagePro
   return (
     <>
       <PublicHeader />
-      <main className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 sm:px-8">
+      <main className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 sm:px-8" id="main-content" tabIndex={-1}>
         <section className="w-full rounded-[1.75rem] border border-[#3e2920]/10 bg-[#fffaf2] p-6 shadow-[0_28px_80px_-55px_rgba(45,27,20,0.75)] sm:p-10">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-copper">
             Order status

@@ -2,6 +2,8 @@
 
 Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It combines a responsive customer ordering experience with a role-protected restaurant operations dashboard.
 
+The interface uses a shared warm cream, copper, charcoal, and botanical design system with responsive public ordering and mobile-safe operational views. Private, cart, checkout, tracking, and bearer-code pages are excluded from search indexing where appropriate.
+
 This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, a browser-persisted guest cart, authoritative pickup/delivery checkout and customer tracking, the staff order workflow, and admin-only catalog management.
 
 ## Product scope
@@ -61,6 +63,8 @@ Copper Spoon binds PostgreSQL only to `127.0.0.1:5433`; PostgreSQL continues to 
 Generate a unique `AUTH_SECRET` in the ignored `.env` before using staff authentication. No staff user is seeded and there is no registration route.
 
 Active admins can manage fictional staff accounts at `/admin/users`: create active `STAFF` or `ADMIN` accounts, edit safe profile fields, disable/reactivate other users, and replace another user's password. The workflow never returns password hashes, forbids self-disable and self-role changes, and transactionally preserves at least one active administrator.
+
+The protected `/admin` landing page is a fresh operational dashboard for both active staff roles. It summarizes total/today/status counts, seven restaurant-local calendar days, recent orders, pickup versus delivery, and popular historical item snapshots. It intentionally reports order activity rather than payment or revenue analytics.
 
 ## Development admin provisioning
 

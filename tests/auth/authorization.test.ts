@@ -26,6 +26,7 @@ describe("authorization policy", () => {
     expect(roleHasPermission("STAFF", "staff:manage")).toBe(false);
     expect(roleHasPermission("STAFF", "settings:write")).toBe(false);
     expect(roleHasPermission("STAFF", "orders:update-status")).toBe(true);
+    expect(roleHasPermission("STAFF", "analytics:read")).toBe(true);
     expect(roleIsAllowed("STAFF", ["ADMIN"])).toBe(false);
   });
 });

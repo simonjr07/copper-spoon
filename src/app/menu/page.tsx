@@ -22,7 +22,7 @@ export default async function MenuPage() {
   return (
     <>
       <PublicHeader />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <section className="overflow-hidden bg-[#35241d] text-white">
           <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1fr_18rem] lg:px-12 lg:py-24">
             <div className="relative z-1">
@@ -67,7 +67,7 @@ export default async function MenuPage() {
         </div>
       </main>
       <footer className="mt-auto border-t border-[#3e2920]/10 px-5 py-8 text-center text-sm text-muted">
-        Copper Spoon is a fictional restaurant experience. No real orders are placed yet.
+        Copper Spoon is a fictional restaurant experience. Orders and payments are demonstrations only.
       </footer>
     </>
   );

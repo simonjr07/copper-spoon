@@ -49,7 +49,7 @@ export function OrderStatusActionForm({
             Cancellation reason
           </label>
           <textarea
-            className="min-h-24 w-full rounded-xl border border-red-300 bg-white px-3 py-2 text-ink"
+            className="field-control min-h-24 border-red-300"
             id="cancellationReason"
             maxLength={500}
             name="cancellationReason"
@@ -57,7 +57,7 @@ export function OrderStatusActionForm({
           />
           <ActionMessage state={state} />
           <button
-            className="rounded-xl bg-red-800 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            className="inline-flex min-h-11 items-center rounded-xl bg-red-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-900 disabled:opacity-60"
             disabled={pending}
             type="submit"
           >
@@ -74,7 +74,7 @@ export function OrderStatusActionForm({
       <p className="text-sm text-muted">Move this order to the next workflow stage.</p>
       <ActionMessage state={state} />
       <button
-        className="mt-3 rounded-xl bg-copper px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        className="button-primary mt-3"
         disabled={pending}
         type="submit"
       >
