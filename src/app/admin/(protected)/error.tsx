@@ -1,13 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 
-export default function WorkspaceError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
+export default function WorkspaceError({ reset }: { reset: () => void }) {
   return (
     <main className="admin-container grid place-items-center">
       <section className="surface-card w-full max-w-xl p-7 text-center sm:p-10">

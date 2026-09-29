@@ -12,7 +12,10 @@ import {
   readCustomerOrder,
 } from "@/features/order-status/order-status";
 import { formatMoney } from "@/lib/money";
+import { privateRouteRobots } from "@/lib/seo";
 import { publicOrderRepository } from "@/server/orders/public-order-repository";
+import { logOperationalError } from "@/server/observability/log";
+import { checkRequestRateLimit } from "@/server/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +34,7 @@ export async function generateMetadata({
       ? `Order ${normalizedCode} | Copper Spoon`
       : "Order status | Copper Spoon",
     description: "View the latest customer-safe status for a fictional Copper Spoon order.",
-    robots: { index: false, follow: false },
+    robots: privateRouteRobots,
   };
 }
 
@@ -45,6 +48,19 @@ export default async function OrderStatusPage({ params }: OrderStatusPageProps) 
 
   if (normalizedCode !== orderCode) {
     redirect(`/order/${normalizedCode}`);
+  }
+
+  let lookupAllowed = false;
+  try {
+    const rateLimit = await checkRequestRateLimit("ORDER_LOOKUP");
+    lookupAllowed = rateLimit.allowed;
+  } catch (error) {
+    logOperationalError("order_lookup.rate_limit_unavailable", error);
+    lookupAllowed = false;
+  }
+
+  if (!lookupAllowed) {
+    return <OrderLookupUnavailable />;
   }
 
   const order = await readCustomerOrder(normalizedCode, publicOrderRepository);
@@ -267,6 +283,33 @@ export default async function OrderStatusPage({ params }: OrderStatusPageProps) 
             Track another order
           </Link>
         </div>
+      </main>
+    </>
+  );
+}
+
+function OrderLookupUnavailable() {
+  return (
+    <>
+      <PublicHeader />
+      <main
+        className="mx-auto grid min-h-[65vh] max-w-2xl place-items-center px-5 py-16 text-center sm:px-8"
+        id="main-content"
+        tabIndex={-1}
+      >
+        <section className="surface-card w-full p-7 sm:p-10">
+          <p className="eyebrow">Order lookup paused</p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-[-0.04em]">
+            Please try again in a few minutes.
+          </h1>
+          <p className="mx-auto mt-4 max-w-lg leading-7 text-muted">
+            We temporarily limited order lookups from this connection. No order
+            details were exposed.
+          </p>
+          <Link className="button-secondary mt-7 inline-flex" href="/track-order">
+            Return to order tracking
+          </Link>
+        </section>
       </main>
     </>
   );

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { PublicHeader } from "@/components/public-header";
 import { CheckoutForm } from "@/features/checkout/checkout-form";
+import { privateRouteRobots } from "@/lib/seo";
 import { getCheckoutSettings } from "@/server/orders/order-repository";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Checkout | Copper Spoon",
   description: "Confirm a fictional Copper Spoon pickup or delivery order.",
-  robots: { index: false, follow: false },
+  robots: privateRouteRobots,
 };
 
 export default async function CheckoutPage() {

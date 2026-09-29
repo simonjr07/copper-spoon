@@ -17,12 +17,12 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 
 - Auth.js credentials authentication with bcrypt cost-12 password hashes.
 - Encrypted JWT sessions expire after eight hours. Safe role/status claims support UI and optimistic checks, but protected work re-reads current database state so disabled accounts lose access on their next protected request.
-- Generic login failures to avoid account enumeration; rate limiting/backoff for repeated attempts.
+- Generic login failures avoid account enumeration. Durable fixed-window limits apply per keyed client digest and per normalized account digest: 10 login attempts per 15 minutes.
 - Secure, HTTP-only, same-site cookies in production and documented session expiration.
 - Disabled users cannot create new sessions. High-impact operations re-check current database status/role.
 - No public registration, hard-coded password, shared production credential, or password in logs/URLs.
 - Admin provisioning is a deliberate command/process with secret input and audit output, not an automatic production seed.
-- Development provisioning requires `NODE_ENV=development`, validated environment-only input, refuses existing email addresses without modification, never logs passwords, and is not a production bootstrap mechanism.
+- Development provisioning requires `NODE_ENV=development`. Production provisioning requires `NODE_ENV=production`, `ADMIN_PROVISION_MODE=production`, and the exact one-time confirmation value. Both use validated environment-only input, refuse existing email addresses without modification, hash at cost 12, and never log passwords.
 
 ## 4. Authorization
 
@@ -30,8 +30,8 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Every protected query/mutation performs authorization near the data operation.
 - Route/layout guards are defense-in-depth and UX, not the only enforcement.
 - Next.js Proxy performs session-presence checks only; it never performs database authorization.
-- Admin-only: menu/category writes, staff administration, settings, analytics.
-- Staff/admin: order reads and permitted status changes.
+- Admin-only: menu/category writes, staff administration, and settings.
+- Staff/admin: dashboard analytics, order reads, and permitted status changes.
 - Prevent disabling/demoting the final active admin unless a safe recovery path exists.
 
 ## 5. Input and transaction security
@@ -41,7 +41,7 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Use Prisma parameterization; raw SQL requires a documented need and parameter binding.
 - Limit quantities, note lengths, item counts, and request sizes to control abuse.
 - Maintain checkout idempotency/replay protection and add optimistic concurrency to status updates.
-- Checkout now uses a unique UUID submission token, bounded cart identifiers/quantities, current-record validation, server-only repricing, and a serializable transaction. Task 13 still adds request-rate limiting.
+- Checkout uses a unique UUID submission token, bounded cart identifiers/quantities, current-record validation, server-only repricing, a serializable transaction, and 12-attempt-per-10-minute client rate limiting.
 - Enforce state-machine transitions server-side.
 
 ## 6. Data protection
@@ -50,7 +50,7 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Never collect card numbers/CVV; `DEMO_CARD` is visibly simulated.
 - Public status responses hide unnecessary contact/address fields and use a high-entropy identifier.
 - The implemented confirmation query accepts only a database-format `CS-` bearer code and selects snapshots/status/totals without customer contact, delivery address, internal IDs, staff data, or notes.
-- Public order lookup normalizes only format-valid codes, performs one indexed uncached read, and uses identical not-found language for malformed and unknown values. The dedicated DTO excludes checkout tokens, event notes, staff actors, and mutable catalog records. Codes remain bearer credentials; Task 13 must add rate limiting before hosted launch.
+- Public order lookup normalizes only format-valid codes, performs one indexed uncached read, and uses identical not-found language for malformed and unknown values. The dedicated DTO excludes checkout tokens, event notes, staff actors, and mutable catalog records. Codes remain bearer credentials; a 60-attempt-per-10-minute client limit runs before the order read and a throttled response reveals no order existence.
 - Admin order reads require `orders:read`; the update action independently requires an active user with `orders:update-status`. Actor identity/role and the current order status are loaded server-side. Hidden IDs, desired status, timestamps, and cancellation text are treated as untrusted input.
 - Status writes enforce one-edge progression, terminal-state rules, role-specific cancellation limits, bounded mandatory cancellation reasons, and a conditional `updatedAt` predicate. The order row and internal actor-attributed event commit atomically, while the public projection never selects the event note or actor.
 - Catalog overview reads require `menu:read`; category and menu/option mutations independently require admin-only `categories:write` or `menu:write`. Direct Server Action calls by staff are denied even when write controls are absent from their UI.
@@ -71,9 +71,9 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 
 - Rely on React escaping; avoid raw HTML. Sanitize any future rich content.
 - Maintain same-origin mutation patterns and Auth.js CSRF/session protections; assess explicit CSRF controls for any custom cookie-authenticated handler.
-- Add security headers and a practical Content Security Policy during hardening, accounting for Next.js requirements and external image hosts.
+- Every route receives a same-origin CSP, clickjacking denial, MIME sniffing prevention, strict referrer policy, restricted browser permissions, opener isolation, and production HSTS. The static CSP permits only the inline script/style behavior currently required by Next.js; development alone permits `unsafe-eval`.
 - Validate/allowlist remote image origins before configuring them.
-- Apply rate limits to login, checkout, and public status lookup. Fail safely if the rate-limit service is unavailable according to endpoint risk.
+- PostgreSQL-backed atomic rate-limit buckets protect login, checkout, and public status lookup across serverless instances. HMAC digests—not plaintext IP/email/order/customer values—are stored, expired buckets are pruned opportunistically, and protected surfaces fail closed when the limiter is unavailable.
 - Avoid open redirects and user-controlled URLs.
 
 ## 9. Error handling and observability
@@ -92,9 +92,17 @@ Protect staff access, order/customer data, database integrity, credentials, and 
 - Protect the main branch with review and required checks when the remote repository is configured.
 - Run migrations through a controlled deployment step and never reset a shared database.
 
-Current foundation note: npm reports four high-severity advisories through the stable Prisma 7.10 CLI dependency tree (`deepmerge-ts` and the unused MySQL driver). Copper Spoon uses PostgreSQL only, does not import the CLI at runtime, and does not process user-controlled Prisma configuration. npm currently suggests Prisma 6.19.3 as the automated fix, but that would undo the supported Node 24/Prisma 7 architecture. Track the upstream Prisma patch and update promptly; do not force a major transitive override without compatibility verification.
+The 2026-09-29 production dependency audit reports zero critical and four high-severity findings, all through the Prisma 7.10 CLI/config dependency tree (`deepmerge-ts`, `mysql2`, `@prisma/config`, and `prisma`). Copper Spoon uses PostgreSQL, does not import the CLI at runtime, and does not accept user-controlled Prisma configuration. npm offers Prisma 6.19.3 as a semver-major downgrade rather than a compatible fix. Track the upstream Prisma release and update after compatibility review; do not use `npm audit fix --force` or override the transitive packages blindly.
 
-## 11. Pre-deployment threat-review checklist
+## 11. Residual risks and release blockers
+
+- The rate-limit table migration must be applied through the controlled deployment step before the hardened application is released; the public actions intentionally fail closed if storage is unavailable.
+- Hosted-demo contact retention/redaction duration, purge automation, monitoring provider, alert ownership, and recovery rehearsal remain owner-approved deployment decisions.
+- The pragmatic static CSP retains `unsafe-inline` for Next.js compatibility. Moving to a nonce-based CSP would force dynamic rendering and should be evaluated only with measured performance evidence.
+- A distributed adversary can rotate source addresses. The limiter is a bounded abuse control, not a bot-management or DDoS service.
+- Manual keyboard/screen-reader/browser profiling and production-like database migration rehearsal remain release evidence; local automated gates do not substitute for them.
+
+## 12. Pre-deployment threat-review checklist
 
 - Test direct calls to every protected action/handler as anonymous, staff, disabled staff, and admin.
 - Verify checkout ignores forged totals/status/payment fields and handles replay/concurrency.

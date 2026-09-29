@@ -29,6 +29,7 @@ This project is done when the agreed product works end to end, is reviewable and
 - No secrets, hard-coded production passwords, card data, or real portfolio seed identities exist in the repository.
 - Public order lookup resists enumeration and exposes only necessary data.
 - Rate limits, security headers/CSP decision, dependency review, admin provisioning, and demo-data retention are complete.
+- Repository hardening provides durable cross-instance abuse limits, HMAC-only limiter identities, fail-closed public actions, explicit production provisioning/recovery, safe error/log projections, and documented residual deployment risks. Hosted launch still requires an approved retention interval/purge process and migration rehearsal.
 
 ## User experience
 

@@ -162,6 +162,22 @@ This lightweight decision log records choices that materially constrain future w
 - Why: The product needs consistent accessible behavior from 320 px through desktop without a large component library, heavy charting dependency, or architecture rewrite.
 - Consequence: Shared CSS component utilities and focused React components now carry the visual contract. Admin tables use responsive cards, navigation scrolls safely on narrow screens, motion respects user preferences, private flows use `noindex`, and route error boundaries show safe recovery actions without technical details.
 
+## ADR-021: Durable abuse limits and static browser hardening
+
+- Status: Accepted and implemented
+- Date: 2026-09-29
+- Decision: Protect login, checkout, and public order lookup with atomic fixed-window PostgreSQL buckets keyed by action-scoped HMAC identity digests. Apply a route-wide static CSP and security-header set; use a small configurable Prisma pool for serverless deployment.
+- Why: Instance-local counters do not coordinate across Vercel processes, plaintext identifiers are unnecessary, and nonce-based CSP would force dynamic rendering across otherwise cacheable public pages. A database-backed design fits the existing Neon dependency without a new paid service.
+- Consequence: The rate-limit migration must precede application traffic, protected surfaces fail closed if it is unavailable, and expired rows are pruned opportunistically. The CSP intentionally permits framework-required inline script/style behavior and development-only `unsafe-eval`; tightening it requires measured nonce/dynamic-render tradeoffs.
+
+## ADR-022: Explicit production admin provisioning and recovery
+
+- Status: Accepted and implemented
+- Date: 2026-09-29
+- Decision: Extend the existing one-time CLI with an environment-matched production mode and exact confirmation value. It creates only a new active admin from injected credentials, refuses duplicate normalized email, never updates existing users, and never emits passwords or raw database failures.
+- Why: A first production administrator and lockout recovery need a documented path, but automatic seeds, shared credentials, and in-place password overrides are unsafe.
+- Consequence: Operators must run the command from a protected one-time job/shell, remove temporary variables immediately, and use a new unique recovery address. Existing-account repair remains an authenticated multi-admin workflow.
+
 ## Pending decisions
 
 | ID | Decision | Needed by |

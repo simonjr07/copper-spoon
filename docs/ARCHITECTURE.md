@@ -142,7 +142,9 @@ Auth.js v5 credentials authentication verifies bcrypt cost-12 hashes for active 
 
 Authorization uses `requireAuthenticatedUser`, `requireActiveUser`, `requireRole`, `requirePermission`, and the centralized role-capability map rather than scattered string comparisons. Page/layout protection improves navigation but does not replace checks at each data access, Server Action, or Route Handler boundary.
 
-Development admin provisioning is an explicit CLI use case, never startup or seed behavior. It requires `NODE_ENV=development`, validated environment input, a unique email, and bcrypt cost 12. Production bootstrap remains deferred.
+Admin provisioning is an explicit CLI use case, never startup or seed behavior. Development mode requires `NODE_ENV=development`; production mode additionally requires an exact confirmation token. Both accept validated environment-only input, require a unique normalized email, hash with bcrypt cost 12, and never update an existing account. Production recovery creates a new admin through the same controlled path.
+
+Public abuse controls use an atomic PostgreSQL `RateLimitBucket` upsert so limits remain consistent across Vercel instances. Request IP/account identities are HMAC-keyed before storage, and login, checkout, and order lookup fail closed if the limiter is unavailable. The pure policy/HMAC layer is separated from the server-only request/Prisma adapter for deterministic tests.
 
 ## 6. Data integrity
 
@@ -172,6 +174,7 @@ Operational events worth observing include login failures, denied authorization,
 - Generated source PNGs remain outside the repository. The selected, optimized WebP derivatives and reproducible prompt/mapping notes are the maintained application assets.
 - Keep cart interactions local and responsive, with server reconciliation at checkout.
 - Build semantic HTML first and test keyboard, screen-reader naming, focus behavior, contrast, responsive layout, and reduced motion.
+- Keep the Prisma pool bounded (`DATABASE_POOL_MAX`, default 5) for serverless/Neon connection budgets. Dashboard aggregates remain bounded/concurrent, public catalog reads retain tagged caching, and the CSP remains static so public pages are not forced dynamic solely for nonce generation.
 
 ## 9. Architecture constraints
 

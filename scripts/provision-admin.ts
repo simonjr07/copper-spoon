@@ -3,12 +3,15 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/generated/prisma/client";
-import { provisionDevelopmentAdmin } from "../src/server/auth/provision-admin";
+import {
+  AdminProvisionError,
+  provisionAdmin,
+} from "../src/server/auth/provision-admin";
 
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-  throw new Error("DATABASE_URL is required for development admin provisioning.");
+  throw new Error("DATABASE_URL is required for admin provisioning.");
 }
 
 const prisma = new PrismaClient({
@@ -16,9 +19,12 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  const admin = await provisionDevelopmentAdmin(
+  const mode = process.env.ADMIN_PROVISION_MODE ?? "development";
+  const admin = await provisionAdmin(
     {
       nodeEnv: process.env.NODE_ENV,
+      mode,
+      confirmation: process.env.ADMIN_PROVISION_CONFIRM,
       name: process.env.ADMIN_PROVISION_NAME,
       email: process.env.ADMIN_PROVISION_EMAIL,
       password: process.env.ADMIN_PROVISION_PASSWORD,
@@ -50,14 +56,17 @@ async function main() {
   );
 
   console.info(
-    `Created development ADMIN ${admin.email}. No password was logged.`,
+    `Created ${mode} ADMIN ${admin.email}. No password was logged.`,
   );
 }
 
 main()
   .catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    console.error(`Development admin provisioning failed: ${message}`);
+    const message =
+      error instanceof AdminProvisionError
+        ? error.message
+        : "Unexpected provisioning failure; no database details were logged.";
+    console.error(`Admin provisioning failed: ${message}`);
     process.exitCode = 1;
   })
   .finally(async () => {

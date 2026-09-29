@@ -137,6 +137,8 @@ Migration `20260928000000_order_checkout_idempotency` adds only the nullable che
 
 Indexes cover unique staff email, catalog slugs, public order code, staff role/status, published menu ordering, available option ordering, recent orders by status/time, order children, status-event timelines, and nullable audit/catalog references. New indexes require a demonstrated query pattern or query-plan evidence.
 
+Task 13 adds `RateLimitBucket`, keyed by a 64-character HMAC digest plus a bounded action name. Each row stores only its aligned window start, atomic attempt count, and expiry; no plaintext IP address, email, order code, or customer field is persisted. Migration `20260929000000_add_rate_limit_buckets` adds the composite primary key, expiry index, and count/window checks. Expired operational rows are deleted opportunistically and carry no business history.
+
 ## 9. Local workflow
 
 ```bash

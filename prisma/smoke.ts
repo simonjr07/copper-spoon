@@ -39,8 +39,8 @@ async function main() {
 }
 
 main()
-  .catch((error: unknown) => {
-    console.error("Database smoke check failed.", error);
+  .catch(() => {
+    console.error("Database smoke check failed; details were withheld.");
     process.exitCode = 1;
   })
   .finally(async () => {
