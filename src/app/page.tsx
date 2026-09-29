@@ -35,7 +35,7 @@ export default function Home() {
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">
                 Modern comfort · thoughtfully served
               </p>
-              <h1 className="mt-6 text-5xl font-semibold leading-[0.96] tracking-[-0.06em] text-ink sm:text-7xl lg:text-[5.6rem]">
+              <h1 className="mt-6 text-balance text-[clamp(2.5rem,7.5vw,5.6rem)] font-semibold leading-[0.98] tracking-[-0.05em] text-ink">
                 A warmer way to gather around food.
               </h1>
               <p className="mt-7 max-w-xl text-base leading-8 text-muted sm:text-lg">
