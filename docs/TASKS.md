@@ -1,198 +1,62 @@
 # Implementation Roadmap
 
-Each task should be a focused branch and pull request from an up-to-date, green `main`. Suggested branch names are illustrative; follow the repository/user convention in effect when work begins.
+This document summarizes the completed delivery phases and the remaining operational work.
 
-## 1. Repository and architecture foundation
+## Completed
 
-Branch: `feat/repository-foundation`
+### Foundation
 
-- Establish documentation, source folders, environment template, Node version, scripts, and a non-generic foundation page.
-- Define product, architecture, data, security, testing, deployment, and completion contracts.
-- Gate: lint, typecheck, production build, and diff check.
+- Established the Next.js application, TypeScript rules, project structure, environment template, and core documentation.
+- Added PostgreSQL 17 with Docker Compose, Prisma ORM 7, reviewed migrations, a server-only client, a fictional development seed, and smoke checks.
 
-Status: complete.
+### Authentication and authorization
 
-## 2. Database foundation
+- Added Auth.js credentials authentication with bcrypt password hashing.
+- Added ADMIN and STAFF capabilities, active-user checks, protected routes, login/logout, and controlled administrator provisioning.
 
-Branch: `feat/database-foundation`
+### Public menu and visual identity
 
-- Install/configure current Prisma tooling after checking its official docs and Node compatibility.
-- Add Docker Compose PostgreSQL for local development.
-- Implement reviewed schema, first migration, Prisma client boundary, fictional catalog seed, and database scripts.
-- Add integration-test database strategy and snapshot/invariant tests where possible.
-- Resolve the deferred database decisions in `DATABASE.md`.
+- Added cached public menu and item routes with search, filters, availability states, options, metadata, and safe public view models.
+- Added repository-local WebP food imagery, responsive next/image usage, and fallback visuals.
 
-Status: implemented. Runtime container/migration/seed/smoke verification is pending on any machine where Docker Desktop is available; Docker is not installed on the current host.
+### Cart, checkout, and tracking
 
-Implemented with PostgreSQL 17 Compose configuration, stable Prisma 7.10, driver adapter, schema, custom-constraint migration, server-only client, idempotent fictional seed, smoke query, scripts, and documentation.
+- Added a versioned browser cart with item configuration and integer-cent estimates.
+- Added pickup/delivery checkout with server-authoritative pricing, serializable order creation, immutable snapshots, and retry idempotency.
+- Added public confirmation and order tracking through non-sequential order codes.
 
-Depends on: Task 1. The approved USD, timezone, identifier, address, port, and credential-template decisions are recorded in `DECISIONS.md`.
+### Restaurant operations
 
-## 3. Authentication and staff authorization
+- Added the order queue, filters, detail views, role-aware transitions, cancellation policy, optimistic concurrency, and audit events.
+- Added category, item, option, publication, availability, and archive management.
+- Added staff account creation, role/status controls, password replacement, self-protection, and final-active-admin protection.
+- Added operational dashboard analytics for status, daily activity, recent orders, fulfilment mix, and popular item snapshots.
 
-Branch: `feat/staff-auth`
+### Interface and hardening
 
-- Add Auth.js credentials flow, bcrypt hashing, active/disabled checks, secure session configuration, login/logout UI, and protected staff route group.
-- Add `requireStaff`/`requireAdmin` helpers and controlled development/admin provisioning.
-- Test authentication, role matrix, disabled users, and direct mutation access.
+- Standardized responsive public and administrative layouts, focus behavior, loading/empty/error states, reduced motion, and private-route indexing policy.
+- Added PostgreSQL-backed rate limits, security headers, bounded database pooling, generic operational errors, and production administrator provisioning.
 
-Depends on: Task 2.
+### Deployment preparation
 
-Status: implemented. Auth.js credentials/JWT sessions, login/logout UI, optimistic proxy redirect, database-backed active-user checks, centralized roles/capabilities, development-only admin provisioning, and focused tests are present. Production provisioning, password reset, and login rate limiting remain later hardening/deployment work.
+- Added GitHub Actions with PostgreSQL-backed migration, lint, typecheck, test, and build gates.
+- Added Vercel configuration and Supabase PostgreSQL connection guidance.
+- Added an idempotent settings migration and a guarded production-demo catalog bootstrap.
+- Added deployment, hosted QA, screenshot, and portfolio case-study documentation.
 
-## 4. Public menu browsing
+## Remaining before public launch
 
-Branch: `feat/public-menu`
+- Complete the Vercel deployment and verify the canonical URL.
+- Run the hosted QA checklist.
+- Confirm contact-data retention and redaction procedures.
+- Assign monitoring and alert ownership.
+- Rehearse database recovery.
+- Record deployed accessibility and performance measurements.
+- Capture verified screenshots and update the README/case study with deployment evidence.
 
-- Build public layout, home/menu routes, category navigation, item detail, search/filtering, loading/error/empty states, and responsive menu presentation.
-- Create cache/revalidation contract and public DTOs.
-- Include realistic fictional content and accessible interaction.
+## Ongoing maintenance
 
-Depends on: Task 2.
-
-Status: implemented. `/menu` and `/menu/[slug]` use server-only cached Prisma reads, explicit public DTOs/publication policy, responsive search and category filtering, informational options, sold-out/empty/loading/not-found states, metadata, and focused catalog/money tests. Task 4B establishes the final image structure; Task 12 may refine presentation.
-
-### 4B. Food imagery and public visual identity
-
-Status: implemented. The homepage, menu cards, and detail route now use a cohesive repository-local WebP food-photography set through responsive `next/image`, safe public image-path DTOs, and a resilient branded fallback. Seed paths are idempotent; the existing schema required no migration. Task 12 may refine art direction but no longer needs to establish the image contract.
-
-## 5. Cart
-
-Branch: `feat/cart`
-
-Status: implemented. Available item details enforce active option-group selection bounds before adding a configuration. A versioned, schema-validated browser cart supports distinct configurations, quantity changes, removal, responsive item imagery, integer-cent line/subtotal estimates, an accessible global count, and empty/loading states. Checkout re-reads the catalog before persisting an order.
-
-- Implement item customization rules, cart add/edit/remove, quantity controls, persisted local cart, money utilities, and accessible feedback.
-- Treat displayed client totals as estimates pending checkout revalidation.
-- Unit test reducers/calculations and option selection rules.
-
-Depends on: Task 4.
-
-## 6. Checkout and order creation
-
-Branch: `feat/checkout`
-
-Status: implemented. `/checkout` validates contact/fulfilment/address/demo-payment input, uses unique checkout tokens for retry idempotency, and performs server-authoritative catalog/settings validation and integer-cent repricing inside a serializable transaction. The nested write creates immutable item/option snapshots plus the initial `PENDING` event. `/order/[orderCode]` returns a confirmation-safe DTO by a high-entropy public code; no real payment or card data is collected.
-
-- Build contact, fulfilment, address, note, and simulated-payment forms.
-- Add Zod validation, server repricing, idempotency protection, atomic snapshot creation, and confirmation.
-- Handle stale price/availability and submission retry safely.
-- Add integration tests for transaction rollback and snapshot invariants.
-
-Depends on: Tasks 2 and 5.
-
-## 7. Customer order status
-
-Branch: `feat/order-status`
-
-Status: implemented. `/order/[orderCode]` now performs a fresh dedicated server-side public DTO read and presents current status, restaurant-timezone placed/event times, immutable snapshots/totals, fulfilment-aware guidance, and a chronological timeline containing only stored events. `/track-order` and the public header provide normalized code entry. Invalid and unknown codes share a safe not-found state; no sensitive/internal fields, polling, notifications, tracking, or ETA are exposed.
-
-- Add non-enumerable tracking route, minimal order DTO, timeline/status presentation, refresh strategy, and privacy/rate-limit controls.
-- Test invalid identifiers and data minimization.
-
-Depends on: Task 6.
-
-## 8. Restaurant order management
-
-Branch: `feat/order-management`
-
-Status: implemented. `/admin/orders` provides a responsive searchable/filterable/paginated fresh queue and `/admin/orders/[id]` provides complete operational snapshots, contact/fulfilment detail, totals, internal history, and actionable status controls. The explicit role-aware state machine, required cancellation reasons, stale-write protection, and atomic actor-attributed audit events are covered by focused tests. The existing schema supported this without a migration.
-
-- Build order queue/filtering, order detail, authorized status transitions, concurrency conflicts, audit timeline, and actionable states.
-- Finalize cancellation policy and test the state machine.
-
-Depends on: Tasks 3 and 6.
-
-## 9. Menu and category management
-
-Branch: `feat/menu-management`
-
-Status: implemented. Staff have a fresh read-only catalog overview; admins can create/edit categories and menu items, manage publication/availability/archive/order, and create/edit option groups and options. Strict cents/image/slug/relationship/bounds validation, safe conflict errors, targeted immediate `public-menu` cache expiry, and snapshot isolation are covered by focused tests. No schema migration was required.
-
-- Build admin category/item/option CRUD, ordering, validation, archive behavior, and fast availability controls.
-- Connect cache revalidation and verify historical orders remain unchanged.
-
-Depends on: Tasks 3, 4, and 8.
-
-## 10. Staff management
-
-Branch: `feat/staff-management`
-
-Status: implemented. Admin-only `/admin/users` list/create/edit workflows manage normalized safe profiles, roles, disable/reactivate status, and another user's password. Serializable last-active-admin protection, strict self-lockout prevention, bcrypt cost 12, safe DTOs/errors, and focused lifecycle/concurrency tests are present. No schema migration was required.
-
-- Build admin-only listing, creation, role/status changes, secure password setup/reset process, and last-active-admin safeguards.
-- Audit high-impact changes and test all role paths.
-
-Depends on: Task 3.
-
-## 11. Restaurant settings and analytics
-
-Branch: `feat/settings-analytics`
-
-- Build admin settings form for restaurant, fulfilment, demo payments, delivery fee, and timezone.
-- Add basic period/order/status aggregates using persisted order values and documented cancellation policy.
-- Test timezone and boundary calculations.
-
-Status: dashboard analytics implemented. `/admin` now gives active staff and admins fresh operational counts, all-status distribution, restaurant-local seven-day activity, recent order links, fulfilment split, and immutable-snapshot popular items through a dedicated server-only repository and minimal DTO. Restaurant-settings editing remains separate work within this roadmap item.
-
-Depends on: Tasks 8–10.
-
-## 12. Frontend polish and responsive UX
-
-Branch: `feat/ux-polish`
-
-- Refine design system, imagery, navigation, responsive layouts, skeleton/empty/error states, micro-interactions, and dashboard density.
-- Preserve performance and reduced-motion behavior; avoid generic-template styling.
-
-Status: implemented. Public ordering and private operations now share a refined local visual system, visible focus behavior, reduced-motion support, responsive cards/forms/navigation, active admin navigation, safe route error recovery, richer loading/empty states, and appropriate private-flow indexing controls. No business semantics, heavy UI library, or animation dependency was added.
-
-Depends on: feature-complete flows.
-
-## 13. Security, accessibility, and performance hardening
-
-Branch: `chore/hardening`
-
-- Perform authorization/input/data-exposure review, headers/CSP plan, rate limits, logging redaction, dependency audit, and abuse-case tests.
-- Complete keyboard/screen-reader/contrast review and run performance profiling on representative routes.
-- Record residual risks and remediation.
-
-Status: implemented for repository hardening. Durable HMAC-keyed PostgreSQL rate limits protect login, checkout, and public order lookup; security headers/CSP, sanitized operational errors, bounded runtime pooling, explicit production admin provisioning/recovery, migration/docs, and focused tests are present. Existing authorization, validation, DTO privacy, transaction, accessibility, SEO, and performance controls were audited. Hosted retention/purge ownership, monitoring provider, production-like migration rehearsal, manual assistive-technology checks, and measured deployed performance remain Task 15 release evidence and require owner infrastructure decisions.
-
-Depends on: feature-complete flows.
-
-## 14. Testing and CI/CD
-
-Branch: `chore/testing-ci`
-
-- Complete Vitest/Testing Library coverage, database integration suite, and Playwright critical journeys.
-- Add GitHub Actions for install, lint, typecheck, test, build, migration validation, and dependency/security checks as appropriate.
-- Define coverage expectations around business invariants rather than a vanity percentage.
-
-Testing is incremental in every prior task; this task closes gaps and establishes the full pipeline.
-
-## 15. Production demo deployment
-
-Branch: `chore/demo-deployment`
-
-- Provision isolated Neon and Vercel resources, configure secrets, run migrations, provision admin safely, seed fictional demo data, and validate rollback/backup/health behavior.
-- Add demo-data reset/retention procedure and smoke-test all role journeys.
-
-Depends on: Tasks 13–14. Requires explicit owner approval and credentials/service connections.
-
-## 16. Case study and portfolio proof
-
-Branch: `docs/case-study`
-
-- Document problem, constraints, architecture, major decisions, schema snapshot behavior, role/security model, testing evidence, screenshots, performance/accessibility results, and live-demo limitations.
-- Remove internal-only or sensitive operational material from public artifacts.
-
-Depends on: deployed, verified release.
-
-## Pull-request checklist for every task
-
-- Scope and acceptance criteria are stated.
-- Database/API/security documentation is updated when contracts change.
-- Tests cover changed business behavior and authorization.
-- `npm run lint`, `npm run typecheck`, relevant tests, `npm run build`, and `git diff --check` pass.
-- No secrets, real customer data, generated build output, or unrelated changes are included.
-- Reviewer can run and verify the feature from the PR description.
+- Review dependency and framework updates against the installed Next.js, Prisma, and Auth.js versions.
+- Keep migrations forward-compatible with rolling deployments.
+- Re-run security, accessibility, and performance checks after material changes.
+- Keep demo data fictional and remove guest submissions according to the approved retention policy.

@@ -1,125 +1,91 @@
 # Application Interfaces
 
-## 1. Approach
+Copper Spoon is a first-party Next.js application, not a public API product. Server Components call server-only queries, Server Actions handle UI mutations, and Route Handlers are limited to Auth.js and interfaces that benefit from HTTP semantics.
 
-Copper Spoon is a first-party Next.js application, not a public API product. Server Components perform reads through server-only query functions. Server Actions handle UI mutations. Route Handlers are added only for Auth.js or when a stable HTTP interface is genuinely useful.
+## Boundary rules
 
-Unless marked implemented, examples below are planned contracts rather than HTTP endpoints. The implementation may refine names while preserving the behavior and security properties.
+- Validate untrusted input with Zod on the server.
+- Treat client IDs, prices, totals, availability, roles, and statuses as untrusted.
+- Check active-user state and capabilities at each protected query or mutation.
+- Return bounded view models rather than unrestricted Prisma records.
+- Keep password hashes, raw sessions, internal errors, and unnecessary customer data on the server.
+- Return stable validation, authentication, authorization, not-found, conflict, and generic error states.
 
-## 2. Boundary rules
+## Server queries
 
-- Parse all untrusted input with Zod on the server.
-- Do not trust IDs, prices, roles, totals, status, or availability supplied by a client.
-- Protected operations require an active session and capability at the mutation/query boundary.
-- Return purpose-built DTOs; never serialize password hashes, raw session data, or unrestricted Prisma records.
-- Use stable safe error codes such as `VALIDATION_ERROR`, `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, and `INTERNAL_ERROR`.
-- Log internal details with a request/correlation identifier; return only the safe message and field errors.
-
-## 3. Planned server queries
-
-| Query | Audience | Result |
+| Query | Access | Result |
 | --- | --- | --- |
-| `getPublicMenu` (implemented) | Public | Published categories and published/non-archived menu-display items plus safe restaurant display settings |
-| `getPublicMenuItem` (implemented) | Public | One published/non-archived item under a published category, with active groups and available choices |
-| `getCustomerOrderStatus` (implemented) | Public bearer code | Fresh status/timeline, placed time, immutable snapshots, and totals by non-sequential public code; no contact/address/internal IDs, staff actors, or notes |
-| `getDashboardSummary` (implemented) | Admin/Staff | Fresh total/today/all-status counts, restaurant-local seven-day activity, recent orders, fulfilment split, and popular immutable item snapshots |
-| `listOrders` (implemented) | Admin/Staff | Fresh searchable, status/fulfilment-filtered, paginated order summaries |
-| `getOrderDetail` (implemented) | Admin/Staff | Full operational snapshot, customer/fulfilment details, totals, and complete internal status history |
-| `getMenuAdmin` (implemented) | Admin/Staff read-only | Fresh categories/items/options including draft, unavailable, inactive, and archived records |
-| `listStaff` (implemented) | Admin | Fresh safe staff identity, role/status, creation and last-login metadata; never password hashes |
-| `getAnalytics` | Admin | Period aggregates from persisted non-cancelled order totals |
+| getPublicMenu | Public | Published categories and orderable/displayable menu data |
+| getPublicMenuItem | Public | One published item with active groups and available choices |
+| getCustomerOrderStatus | Public order code | Current status, immutable snapshots, totals, and public timeline |
+| getDashboardSummary | STAFF, ADMIN | Operational counts, activity, fulfilment mix, recent orders, and popular items |
+| listOrders | STAFF, ADMIN | Searchable and paginated order summaries |
+| getOrderDetail | STAFF, ADMIN | Customer, fulfilment, snapshot, total, and internal event data |
+| getMenuAdmin | STAFF read, ADMIN write | Complete catalog including draft and archived records |
+| listStaff | ADMIN | Staff identity, role, status, creation, and last-login data |
 
-## 4. Planned Server Actions
+## Server Actions
 
-| Action | Authorization | Key behavior |
+| Action | Access | Behavior |
 | --- | --- | --- |
-| `createOrder` (implemented; rate limit pending) | Public | Validate checkout, resolve idempotency token, reprice, transactionally create snapshots/event |
-| `updateOrderStatus` (implemented) | Admin/Staff | Re-read current order, enforce role/status policy and optimistic concurrency, atomically update and append actor-attributed event |
-| `createCategory` / `updateCategory` (implemented) | Admin | Normalize/validate unique slug, ordering and publication; immediately expire `public-menu` |
-| `createMenuItem` / `updateMenuItem` (implemented) | Admin | Validate category, exact decimal price, local image path, publication/availability/archive state; expire `public-menu` |
-| `archiveMenuItem` (implemented) | Admin | Confirm, archive and unpublish without deleting historical references; expire `public-menu` |
-| `create/updateOptionGroup` and `create/updateMenuOption` (implemented) | Admin | Verify item/group relationships, selection bounds and exact adjustment cents; expire `public-menu` |
-| `updateRestaurantSettings` | Admin | Validate fulfilment/payment compatibility |
-| `createStaffUser` (implemented) | Admin | Normalize unique email, validate strong password/role, create ACTIVE account with bcrypt cost 12 |
-| `updateStaffUser` (implemented) | Admin | Edit safe identity/role fields with serializable last-admin and self-role protection |
-| `setStaffUserStatus` (implemented) | Admin | Confirm disable/reactivate, prevent self-disable and transactionally preserve an ACTIVE ADMIN |
-| `resetStaffPassword` (implemented) | Admin | Replace another user's password using the same policy and cost; no existing/plaintext password response |
+| createOrder | Public, rate limited | Validate, reprice, resolve idempotency, and create the order transactionally |
+| updateOrderStatus | STAFF, ADMIN | Enforce state and role rules, detect stale writes, and append an audit event |
+| saveCategory | ADMIN | Validate category data and invalidate the public catalog cache |
+| saveMenuItem | ADMIN | Validate item data, price, image path, and lifecycle state |
+| archiveMenuItem | ADMIN | Archive and unpublish without deleting history |
+| saveOptionGroup / saveMenuOption | ADMIN | Validate ownership, selection bounds, availability, and prices |
+| createStaffUser | ADMIN | Create an active account with a normalized email and bcrypt hash |
+| updateStaffUser | ADMIN | Update safe profile/role fields with self and last-admin protection |
+| setStaffUserStatus | ADMIN | Disable or reactivate an account with lockout protection |
+| resetStaffPassword | ADMIN | Replace another user's password without returning plaintext or hashes |
 
-Action result shape:
+Restaurant settings do not currently have an editing action.
 
-```ts
-type ActionResult<T> =
-  | { ok: true; data: T }
-  | {
-      ok: false;
-      error: {
-        code: string;
-        message: string;
-        fieldErrors?: Record<string, string[]>;
-      };
-    };
-```
+## Route Handlers
 
-Redirecting actions may redirect after successful mutation instead of returning data. Framework-thrown redirects must not be swallowed by broad error handling.
+- GET/POST /api/auth/[...nextauth] is managed by Auth.js.
+- No generic public menu or order CRUD API is exposed.
+- A future health endpoint should expose process status only; database readiness details should remain private.
 
-## 5. Route Handlers
+## Cart and checkout contract
 
-Expected route-handler surface:
+The browser stores a versioned cart under copper-spoon:cart. It contains item and option display snapshots, quantities, and estimated integer-cent prices.
 
-- `GET|POST /api/auth/[...nextauth]` — implemented Auth.js-managed authentication endpoints.
-- Optional `GET /api/health` — shallow deployment health only, with no secrets or database detail. A database readiness endpoint should be private if added.
+Checkout submits identifiers, quantities, a UUID token, customer/fulfilment fields, and a simulated payment choice. The server discards client prices as authority, reloads current data, validates compatibility, and calculates all totals.
 
-There is no generic public menu/order CRUD REST API in the initial plan. If external clients become a real requirement, versioned handlers, explicit authentication, rate limits, idempotency, and OpenAPI documentation will be designed then.
+Repeated submissions with the same committed checkout token return the original public order code.
 
-## 6. Public order creation contract
+## Order status contract
 
-Client input contains a random checkout token, item IDs, option IDs, quantities, customer/fulfilment fields, and payment choice. It does not contain authoritative unit prices or totals. Unknown cart fields are discarded by the Zod schema. The server returns either:
+Normal progression is:
 
-- an order number and non-enumerable public status identifier; or
-- a structured validation/conflict response explaining changed availability or pricing.
+~~~text
+PENDING -> CONFIRMED -> PREPARING -> READY -> COMPLETED
+~~~
 
-Repeated submission protection uses a client-generated UUID stored as nullable unique `Order.checkoutToken`. The serializable transaction returns an existing public code when the token has already committed; a uniqueness race retries and then resolves the same order. The submit button also remains disabled while its Server Action is pending.
+STAFF may cancel PENDING or CONFIRMED orders. ADMIN may also cancel PREPARING orders. READY and terminal orders cannot be cancelled. Cancellation requires a trimmed reason of at most 500 characters.
 
-### Implemented client cart contract
+The order update and actor-attributed event commit in one serializable transaction.
 
-The cart is not an HTTP or database interface. The browser stores a versioned payload under `copper-spoon:cart` containing item display snapshots, selected option display snapshots, quantities, and estimated integer-cent prices. A strict schema limits lengths/counts, allows only repository-local image paths, rejects mixed currencies, and reconstructs configuration identities during hydration.
+## Public tracking contract
 
-Cart actions support add/merge, bounded quantity change, removal, and clear. This payload is never authoritative: checkout submits identifiers and quantities, discards stored prices/names/totals as authority, and rejects the whole checkout when current publication, availability, option membership, bounds, or currency no longer match.
+/track-order normalizes valid codes and redirects to /order/[orderCode]. Malformed and unknown codes use the same not-found response.
 
-## 7. Status transition contract
+The public response includes the code, current status, fulfilment/payment labels, placed time, restaurant timezone, immutable item/option snapshots, totals, and event status/timestamps.
 
-The action accepts order ID, desired status, an `updatedAt` concurrency token, and an optional cancellation reason. The token detects a stale screen; the service always re-reads the database status and never trusts a client-supplied current status. Normal processing is exactly `PENDING → CONFIRMED → PREPARING → READY → COMPLETED`, with no skips, reversals, or transitions from terminal states.
+It excludes customer contact/address fields, checkout tokens, staff actors, event notes, internal IDs, and current catalog records.
 
-`STAFF` may cancel `PENDING` and `CONFIRMED` orders. `ADMIN` may additionally cancel `PREPARING` orders. Neither role may cancel `READY`, `COMPLETED`, or `CANCELLED` orders. A trimmed non-empty reason of at most 500 characters is mandatory. The conditional order update and actor-attributed `OrderStatusEvent` are one serializable transaction; a stale predicate or event failure rolls back the whole operation.
+## Authentication interfaces
 
-## 8. Caching and revalidation
+The Auth.js credentials flow accepts a validated email and password and returns a session cookie or a generic failure. Unknown email, incorrect password, disabled account, and rate-limited attempts do not reveal account existence.
 
-- Public catalog reads may use explicit cache tags such as `menu`, `menu-item:<id>`, and `restaurant-settings`.
-- Menu/settings mutations invalidate the relevant tags after a successful commit.
-- Order and dashboard reads default to dynamic because freshness is operationally important.
-- Customer status should not be cached across public identifiers.
+JWT/session callbacks expose only safe identity, role, and status fields. Protected server work re-reads the current database account.
 
-Caching policy will use the APIs documented by the installed Next.js version at implementation time.
+There is no public registration, customer authentication, or self-service password reset.
 
-Implemented public catalog reads use a five-minute `unstable_cache` TTL and the `public-menu` / `restaurant-settings` tags. The future menu/settings mutations invalidate the relevant tag after a successful commit. Public list/detail DTOs contain display fields only and never expose publication flags, sort keys, archive state, timestamps, or other administrative metadata. A published item with `isAvailable=false` remains visible as sold out and is never presented as orderable.
+## Caching
 
-Implemented customer order-status reads are deliberately uncached and run through a separate server-only repository on every `/order/[orderCode]` request. The route is forced dynamic; browser refresh is the initial freshness mechanism. Status mutations revalidate admin routes; no public status cache exists to invalidate.
-
-Implemented admin catalog mutations call `updateTag("public-menu")` only after a successful database write, providing immediate read-your-own-writes behavior for both public list and item-detail caches. They do not invalidate `restaurant-settings`, because catalog changes do not mutate settings.
-
-Implemented dashboard reads are forced dynamic and call a dedicated server-only analytics repository directly. The DTO contains aggregate numbers, display-safe recent-order fields plus prebuilt detail links, timezone/currency display context, and immutable item-snapshot labels. It excludes customer/contact/address data, staff actors, internal order IDs, notes, and mutable catalog records. Popular-item counts exclude cancelled orders; the dashboard does not present payment settlement or revenue analytics.
-
-## 10. Public order-status contract
-
-`/track-order?code=...` trims and uppercases codes, validates the existing `CS-` plus 6–12 alphanumeric format, and redirects to the canonical `/order/[orderCode]` URL. Invalid-format and unknown codes expose the same safe not-found language.
-
-The public DTO includes only public code, current status, fulfilment/payment labels, placed time, restaurant timezone, immutable item/option snapshots, persisted cents totals/currency, and recorded status/time pairs. Timeline notes, staff actor IDs, customer contact/address fields, checkout tokens, internal order IDs, operational timestamps, and current catalog records are excluded.
-
-## 9. Authentication interfaces
-
-- `POST` through the Auth.js credentials flow accepts validated email/password input from `/admin/login` and returns only a session cookie or a generic failure.
-- The login Server Action maps unknown email, wrong password, and disabled account to the same public message.
-- JWT/session callbacks expose only `id`, `name`, `email`, `role`, and `status`; the password hash never enters the token or client session.
-- `src/proxy.ts` optimistically redirects anonymous requests for `/admin` and nested routes except `/admin/login`.
-- Secure server queries/mutations call `requireActiveUser`, `requireRole`, or `requirePermission`, which re-read the current database account.
-- No registration, public/self-service password-reset, or customer-authentication interface exists. Admin-driven replacement for another staff account is private and capability-protected.
+- Public catalog reads use a five-minute cache with public-menu and restaurant-settings tags.
+- Successful catalog writes invalidate public-menu.
+- Order, tracking, staff, and dashboard reads remain dynamic.
+- Customer order status is never cached across public identifiers.

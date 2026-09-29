@@ -1,38 +1,71 @@
 # Copper Spoon
 
-Copper Spoon is a fictional, single-restaurant ordering system built as a production-style portfolio project. It combines a responsive customer ordering experience with a role-protected restaurant operations dashboard.
+Copper Spoon is a production-style restaurant ordering application for a fictional single-location restaurant. It combines a responsive customer ordering flow with a role-protected workspace for restaurant staff.
 
-The interface uses a shared warm cream, copper, charcoal, and botanical design system with responsive public ordering and mobile-safe operational views. Private, cart, checkout, tracking, and bearer-code pages are excluded from search indexing where appropriate.
+The project models the parts of online ordering that are easy to overlook: current availability and pricing, immutable order history, controlled status transitions, staff authorization, and safe public order tracking.
 
-This repository currently contains the application/database foundation, staff authentication, a database-backed public menu, a browser-persisted guest cart, authoritative pickup/delivery checkout and customer tracking, the staff order workflow, and admin-only catalog management.
+**Deployment status:** the application is prepared for Vercel and Supabase PostgreSQL, but a public demo URL has not yet been verified.
 
-## Product scope
+## Features
 
-- Public menu browsing, item customization, cart, checkout, confirmation, and order tracking
-- Staff order processing with `ADMIN` and `STAFF` authorization
-- Menu, category, availability, settings, staff, and analytics administration
-- Simulated payment methods only; no real payment processing or real customer data
-- One restaurant; no marketplace, customer accounts, drivers, loyalty, or reservations
+### Customer experience
 
-See [Product Requirements](docs/PRODUCT_REQUIREMENTS.md) and [Tasks](docs/TASKS.md) for the complete scope.
+- Browse and search a published menu.
+- Configure required and optional item choices.
+- Maintain a browser-persisted cart.
+- Submit pickup or delivery orders without an account.
+- Track an order with a non-sequential public code.
+- View immutable item snapshots, totals, status, and recorded timeline events.
+
+### Staff and administration
+
+- Credentials-based access for `STAFF` and `ADMIN` roles.
+- Operational dashboard with status counts, recent orders, seven-day activity, fulfilment mix, and popular items.
+- Searchable order queue and controlled status transitions.
+- Category, menu item, option, publication, availability, and archive management.
+- Staff account creation, role/status management, and password replacement.
+- Protection against self-lockout and removal of the final active administrator.
+
+The application uses simulated payment choices only. It does not process card data, create customer accounts, manage drivers, or support multiple restaurants.
 
 ## Technology
 
 - Next.js 16 App Router, React 19, TypeScript, and Tailwind CSS 4
-- PostgreSQL 17 with Prisma ORM 7 and the PostgreSQL driver adapter
-- Auth.js credentials authentication, bcrypt, and Zod validation
-- Vitest for unit and integration tests
-- Docker PostgreSQL for local development, Neon for the hosted demo, and Vercel for the app (subject to deployment validation)
+- PostgreSQL 17 and Prisma ORM 7 with `@prisma/adapter-pg`
+- Auth.js credentials authentication and bcrypt password hashing
+- Zod validation at server boundaries
+- Vitest, ESLint, TypeScript, and GitHub Actions
+- Docker PostgreSQL for local development
+- Vercel and Supabase PostgreSQL for the hosted demo architecture
 
-## Requirements
+## Architecture
 
-- Node.js 24 LTS (see `.nvmrc`)
-- npm 11+
+Copper Spoon is a single Next.js application. Server Components perform reads, Server Actions handle first-party mutations, Auth.js manages staff sessions, and server-only modules contain authorization, database access, and transactional business logic.
+
+Important design choices include:
+
+- Integer minor-unit money values
+- Server-authoritative checkout pricing
+- Immutable order item and option snapshots
+- Serializable, idempotent order creation
+- Transactional order status events
+- Database-backed active-user authorization
+- PostgreSQL rate limiting across serverless instances
+- Cached public catalog reads and fresh operational reads
+
+See [Architecture](docs/ARCHITECTURE.md), [Database Design](docs/DATABASE.md), [Security](docs/SECURITY.md), and [Architecture Decisions](docs/DECISIONS.md).
+
+## Local development
+
+Requirements:
+
+- Node.js 24 LTS
+- npm 11 or later
 - Docker Desktop with Compose
 
-## Local setup
+PowerShell setup:
 
-```bash
+```powershell
 nvm use
 npm ci
 Copy-Item .env.example .env
@@ -42,35 +75,15 @@ npm run db:seed
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+On macOS or Linux, replace `Copy-Item` with `cp`.
 
-The public catalog is available at `http://localhost:3000/menu`. It shows only published, non-archived catalog data; published sold-out dishes remain visible with a clear unavailable state.
+The Docker database is bound to `127.0.0.1:5433`; PostgreSQL still listens on port `5432` inside the container. Replace the placeholder password in `POSTGRES_PASSWORD`, `DATABASE_URL`, and `DIRECT_URL` before starting.
 
-Available dishes can be configured on their detail pages and added to `http://localhost:3000/cart`. The cart is stored locally in the browser and uses integer-cent estimates. `/checkout` accepts fictional pickup/delivery orders, re-reads the current catalog and restaurant settings, recalculates every amount server-side, and atomically stores immutable order snapshots. Confirmation is available only through the generated non-sequential `CS-…` public code. No real card details or payment processing are used.
+Open `http://localhost:3000` for the public site or `http://localhost:3000/admin/login` for staff access.
 
-Customers can reopen `/order/[orderCode]` or use `/track-order` to fetch the latest recorded status and timeline. The public view uses immutable order snapshots, formats timestamps in the restaurant timezone, and excludes contact details, delivery addresses, internal IDs, staff actors, and notes. It does not promise polling, notifications, live kitchen telemetry, driver tracking, or precise ETAs.
+## Development administrator
 
-Active `STAFF` and `ADMIN` users can use `/admin/orders` to search and filter the fresh operational queue, inspect contact, fulfilment, snapshots, totals, and internal status history, and advance one state at a time. Staff may cancel only `PENDING` or `CONFIRMED` orders; admins may additionally cancel `PREPARING` orders. Every cancellation requires a reason. `READY`, `COMPLETED`, and `CANCELLED` orders cannot be cancelled.
-
-`/admin/menu` gives staff a read-only catalog overview and admins complete category, item, option-group, and option editing. Admin writes use normalized unique slugs, exact decimal-to-cents conversion, repository-local image paths, safe unpublish/archive behavior, and immediate `public-menu` cache expiry. Catalog edits never rewrite historical order snapshots.
-
-Customer-facing food imagery is stored locally under `public/images/hero` and `public/images/menu`. The homepage preloads only its above-the-fold hero; menu images use responsive `next/image` sizing and lazy loading. Seeded `MenuItem.imageUrl` values are repository-local `/images/...` paths, and missing or invalid paths render an accessible visual fallback.
-
-On macOS/Linux, copy the environment template with `cp .env.example .env` instead. Replace the local-only database password in both relevant variables before starting PostgreSQL.
-
-Copper Spoon binds PostgreSQL only to `127.0.0.1:5433`; PostgreSQL continues to listen on port `5432` inside the container.
-
-Generate a unique `AUTH_SECRET` in the ignored `.env` before using staff authentication. No staff user is seeded and there is no registration route.
-
-Active admins can manage fictional staff accounts at `/admin/users`: create active `STAFF` or `ADMIN` accounts, edit safe profile fields, disable/reactivate other users, and replace another user's password. The workflow never returns password hashes, forbids self-disable and self-role changes, and transactionally preserves at least one active administrator.
-
-The protected `/admin` landing page is a fresh operational dashboard for both active staff roles. It summarizes total/today/status counts, seven restaurant-local calendar days, recent orders, pickup versus delivery, and popular historical item snapshots. It intentionally reports order activity rather than payment or revenue analytics.
-
-## Development admin provisioning
-
-Provision an initial local admin only after the database migration is applied. Supply all values through the current shell; do not add real credentials to `.env.example` or Git.
-
-PowerShell:
+No staff account is seeded. Create a local administrator after migrations complete:
 
 ```powershell
 $env:NODE_ENV = "development"
@@ -82,69 +95,72 @@ npm run admin:provision
 Remove-Item Env:ADMIN_PROVISION_PASSWORD
 ```
 
-The password must be 12–72 UTF-8 bytes and contain a letter, number, and symbol. The command uses bcrypt cost 12, creates an `ACTIVE` `ADMIN`, enforces the selected environment, and refuses to change an existing account with the same normalized email. It never prints the password and is never run automatically.
-
-For a production bootstrap or recovery, inject `NODE_ENV=production`, `ADMIN_PROVISION_MODE=production`, `ADMIN_PROVISION_CONFIRM=CREATE_PRODUCTION_ADMIN`, and the three credential values only into a one-time protected job or shell, run `npm run admin:provision`, then remove them. Recovery creates a new uniquely addressed admin; it never resets or mutates an existing account. Do not store these values in `.env.example`, VCS, shell history, or build logs.
-
-Hosted runtime configuration additionally requires a random `RATE_LIMIT_SECRET` of at least 32 characters and a conservative `DATABASE_POOL_MAX` (default `5`). Apply all migrations before serving traffic because login, checkout, and order lookup fail closed if the durable rate-limit table is unavailable.
+Passwords must be 12-72 UTF-8 bytes and contain a letter, number, and symbol. Provisioning creates a new active administrator and refuses to modify an existing account.
 
 ## Database commands
 
 ```bash
 npm run db:validate   # validate the Prisma schema
-npm run db:generate   # regenerate the ignored Prisma Client output
-npm run db:migrate    # create/apply development migrations
-npm run db:deploy     # apply existing migrations without creating new ones
+npm run db:generate   # generate Prisma Client
+npm run db:migrate    # create and apply local development migrations
+npm run db:deploy     # apply committed migrations
 npm run db:status     # inspect migration state
-npm run db:seed       # upsert fictional development catalog data
-npm run db:smoke      # query settings/category/item counts
+npm run db:seed       # load the fictional development catalog and settings
+npm run db:smoke      # query settings and catalog counts
 ```
 
-## Quality checks
+`db:seed` is for development because it normalizes restaurant settings and matching catalog records. The guarded `npm run demo:catalog:bootstrap` command is used for the hosted demo. It creates missing fictional catalog records through `DIRECT_URL` and leaves existing settings, users, orders, and matching catalog records unchanged.
+
+## Quality checks and CI
 
 ```bash
 npm run lint
 npm run typecheck
-npm run build
 npm test
+npm run build
 git diff --check
 ```
 
-The production build does not run ESLint in Next.js 16, so lint and type checking remain explicit CI gates.
+GitHub Actions runs these checks on Node 24 and applies all migrations to an ephemeral PostgreSQL 17 service. Production credentials are not available to pull-request jobs.
 
-## Repository map
+## Deployment
+
+The deployment path is:
 
 ```text
-docs/                 Product, architecture, operations, and delivery guidance
-public/               Static public assets
-src/app/              App Router routes, layouts, and route handlers
-src/components/       Reusable cross-feature UI
-src/features/         Feature-owned UI, schemas, actions, and domain helpers
-src/lib/              Shared framework-agnostic utilities
-src/server/           Server-only auth, data access, and services
-src/types/            Shared TypeScript declarations
-tests/                 Cross-feature integration and test support
-prisma/                Schema, migrations, fictional seed, and DB smoke check
+Vercel -> Next.js -> Prisma -> Supabase PostgreSQL
 ```
 
-Route-specific code may be colocated beneath `src/app`. Shared business behavior belongs in feature or server modules rather than route files.
+Application traffic uses the Supabase Transaction Pooler through `DATABASE_URL`. Prisma CLI and migration commands use the Session Pooler through `DIRECT_URL`. Production migrations, administrator provisioning, and demo catalog creation are separate controlled steps.
+
+See [Deployment](docs/DEPLOYMENT.md), [Hosted QA](docs/HOSTED_QA.md), and [Screenshot Plan](docs/SCREENSHOTS.md).
+
+## Repository structure
+
+```text
+docs/          Product, design, operations, and delivery documentation
+prisma/        Schema, migrations, development seed, and smoke check
+public/        Static images and public assets
+scripts/       Controlled operational commands
+src/app/       Next.js routes, layouts, and route handlers
+src/features/  Feature UI, schemas, actions, and domain helpers
+src/server/    Server-only authorization, persistence, and services
+tests/         Automated tests
+```
 
 ## Documentation
 
-- [Product requirements](docs/PRODUCT_REQUIREMENTS.md)
+- [Product Requirements](docs/PRODUCT_REQUIREMENTS.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [Database design](docs/DATABASE.md)
-- [Application interfaces](docs/API.md)
-- [Public image assets](docs/IMAGE_ASSETS.md)
-- [Implementation roadmap](docs/TASKS.md)
-- [Architecture decisions](docs/DECISIONS.md)
-- [Testing strategy](docs/TESTING.md)
-- [Security model](docs/SECURITY.md)
-- [Deployment plan](docs/DEPLOYMENT.md)
-- [Definition of done](docs/DEFINITION_OF_DONE.md)
+- [Database Design](docs/DATABASE.md)
+- [Application Interfaces](docs/API.md)
+- [Security](docs/SECURITY.md)
+- [Testing Strategy](docs/TESTING.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Architecture Decisions](docs/DECISIONS.md)
+- [Implementation Roadmap](docs/TASKS.md)
+- [Definition of Done](docs/DEFINITION_OF_DONE.md)
+- [Case Study](docs/CASE_STUDY.md)
+- [Image Assets](docs/IMAGE_ASSETS.md)
 
-## Workflow
-
-Keep `main` releasable. Develop each roadmap task on a `codex/<task-name>` or `feat/<task-name>` branch, open a focused pull request, pass quality gates, review, and merge. Do not commit credentials, production data, generated output, or local environment files.
-
-All names, menu content, users, orders, and contact details used in this project must be obviously fictional.
+All committed demo names, contact details, menu content, users, and orders are fictional.

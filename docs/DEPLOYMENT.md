@@ -1,115 +1,135 @@
 # Deployment
 
-## 1. Target topology
+## Status and topology
 
-- Application: Vercel running the Next.js Node.js application, if compatibility and cost remain appropriate
-- Database: Neon PostgreSQL in the same practical region as the application
-- Local database: Docker PostgreSQL; run the Next.js dev server directly on the host for a faster Windows/macOS workflow
-- Source/CI: GitHub with required pull-request checks
+The repository is prepared for deployment, but the public Vercel release and hosted QA are not yet complete.
 
-This is a plan, not an active deployment. No service should be provisioned or connected without explicit owner approval.
+~~~text
+Vercel -> Next.js -> Prisma -> Supabase PostgreSQL
+~~~
 
-## 2. Environments
+- Vercel runs the Node.js application.
+- Supabase provides managed PostgreSQL in a compatible region.
+- GitHub Actions provides pre-merge quality gates.
+- Docker PostgreSQL supports local development.
+
+Supabase is used only as the PostgreSQL provider. Authentication remains in Auth.js.
+
+## Environments
 
 ### Local
 
-Developer-owned Docker database and `.env.local`. Fictional seed data only. Destructive resets are permitted only against a positively identified local database.
+Uses the Docker database and an ignored .env file. Development seed data is fictional.
 
 ### Preview
 
-Per-pull-request application preview where useful. Database strategy must prevent arbitrary preview branches from mutating production. Prefer an isolated preview database/branch or read-only/no-database previews until automation is safely designed.
+Preview builds must not mutate the production database. Use an isolated database, a read-only strategy, or a no-database preview until safe branch automation exists.
 
 ### Production demo
 
-Public portfolio application and isolated demo database. It is not a real restaurant service. All content is fictional; guest-entered data has a documented retention/reset policy.
+Uses an isolated Supabase database and fictional restaurant/catalog data. Guest submissions require an approved retention and redaction policy.
 
-## 3. Configuration contract
+## Environment variables
 
-Expected server-only variables:
+Server-only production variables:
 
-- `DATABASE_URL` — pooled runtime PostgreSQL connection as supported by the selected Prisma/Neon setup
-- `DATABASE_POOL_MAX` — per-instance application pool ceiling; defaults to `5` and must be budgeted against the Neon plan and Vercel concurrency
-- A direct migration URL if the current Prisma/Neon architecture requires it
-- `AUTH_SECRET` — high-entropy environment-specific secret
-- `RATE_LIMIT_SECRET` — separate random HMAC key of at least 32 characters (falls back to `AUTH_SECRET`, but separation is preferred)
-- `AUTH_URL` or current Auth.js host-trust configuration where required
+| Variable | Purpose |
+| --- | --- |
+| DATABASE_URL | Supabase Transaction Pooler URL for application traffic |
+| DIRECT_URL | Supabase Session Pooler URL for Prisma CLI and migrations |
+| DATABASE_POOL_MAX | Per-instance application pool limit; default 5 |
+| AUTH_SECRET | Auth.js encryption/signing secret |
+| RATE_LIMIT_SECRET | HMAC key for rate-limit identities |
+| AUTH_URL | Canonical origin only when Auth.js cannot infer the deployed host |
 
-Public variables are introduced only for values safe to freeze into a browser bundle. Secrets must never use the `NEXT_PUBLIC_` prefix.
+Connection strings and secrets must not be exposed to client bundles, logs, screenshots, or source control.
 
-The committed `.env.example` is documentation, not usable credentials. Validate required variables during server startup/build where compatible with the chosen runtime.
+## CI and release gates
 
-## 4. Build and release pipeline
+The GitHub Actions workflow uses Node 24 and an ephemeral PostgreSQL 17 service. It installs from the lockfile, generates and validates Prisma, applies migrations, then runs lint, type checking, tests, and the production build.
 
-Proposed protected-branch pipeline:
+The Vercel configuration uses the repository root, Next.js framework preset, npm ci, and npm run build. package.json selects Node 24 and postinstall generates Prisma Client.
 
-1. Use Node 24 and `npm ci` from the lockfile.
-2. Run lint and TypeScript checks.
-3. Run unit and integration tests with ephemeral PostgreSQL.
-4. Validate Prisma schema/migrations and build the application.
-5. Create a preview for reviewed pull requests when safe.
-6. Merge only after required checks and review.
-7. Apply production migrations through one controlled, serialized step.
-8. Deploy the compatible application build.
-9. Run post-deployment health and critical-journey smoke tests.
+## Database operations
 
-Application/schema changes should be expand-and-contract compatible when a rolling or non-atomic deployment could temporarily run old and new versions together.
+- Application requests use the Transaction Pooler through DATABASE_URL.
+- Prisma status and migration commands use the Session Pooler through DIRECT_URL.
+- Migrations run once from a controlled shell or serialized job, not during application startup.
+- Production uses prisma migrate deploy.
+- Production does not use migrate dev, db push, migrate reset, or the development seed.
+- Migration SQL is reviewed for locking and destructive operations before release.
 
-## 5. Database operations
+## Administrator provisioning
 
-- Commit migrations; never use ad-hoc production schema pushes.
-- Review migration SQL for destructive/locking operations and take a restore point when risk warrants it.
-- Use least-privilege application credentials and separate migration authority if the platform supports it.
-- Use the Neon pooled endpoint for the application runtime, keep the pool small, and budget total connections across concurrent Vercel instances. Run `prisma migrate deploy` from one controlled job using the connection form approved for migrations; never let every application instance migrate at startup.
-- Seed production demo content through an explicit fictional-data process. Never auto-create an admin with a committed password.
+Production provisioning creates a new active administrator and refuses to modify an existing email address.
 
-## 6. Admin provisioning
+Required values:
 
-Production admin creation and recovery use the same explicit command from a protected one-time job:
-
-```text
+~~~text
 NODE_ENV=production
 ADMIN_PROVISION_MODE=production
 ADMIN_PROVISION_CONFIRM=CREATE_PRODUCTION_ADMIN
-ADMIN_PROVISION_NAME=<injected secret input>
-ADMIN_PROVISION_EMAIL=<new unique address>
-ADMIN_PROVISION_PASSWORD=<injected secret input>
+ADMIN_PROVISION_NAME=<injected value>
+ADMIN_PROVISION_EMAIL=<injected value>
+ADMIN_PROVISION_PASSWORD=<injected value>
 npm run admin:provision
-```
+~~~
 
-The command validates a strong password, hashes with bcrypt cost 12, creates only an active admin, prints only the normalized email, and refuses duplicate addresses rather than mutating them. Recovery creates a new unique admin, after which another admin may safely repair account state through the application. Remove every temporary variable/job secret immediately. Never place production credentials in seed files, `.env.example`, shell history, build logs, or the repository.
+The password must be 12-72 UTF-8 bytes and contain a letter, number, and symbol. Temporary provisioning values should be removed after the command completes.
 
-The release order is: configure secrets, run `npm ci`/generate, apply migrations once, run the explicit fictional seed only if approved, provision the initial admin once, deploy the application, then execute smoke tests. The new rate-limit migration is a hard prerequisite because protected public actions fail closed without it.
+## Production demo catalog
 
-## 7. Health, monitoring, and recovery
+The settings migration creates the RestaurantSettings singleton only when it is absent. It does not create a catalog or user.
 
-- A shallow health check confirms the app process; a private readiness check may confirm database reachability.
-- Monitor elevated errors, latency, failed order creation, authentication abuse, and database resource limits without logging customer data.
-- Define alert ownership before public launch.
-- Test database restore/recovery and document Neon retention/branch capabilities selected at provisioning time.
-- Roll back application code only when schema compatibility allows it; otherwise deploy a forward fix.
+The hosted catalog is created with the guarded npm run demo:catalog:bootstrap command. It requires:
 
-## 8. Demo data lifecycle
+~~~text
+NODE_ENV=production
+PRODUCTION_DEMO_CATALOG_CONFIRM=BOOTSTRAP_PRODUCTION_DEMO_CATALOG
+~~~
 
-- Clearly label the service as a demonstration and discourage real personal information.
-- Run a scheduled/manual purge or redaction process for guest contact/address fields after the approved retention interval.
-- Preserve aggregate/synthetic portfolio evidence without retaining identifiable submissions.
-- Reset catalog/orders only through an authenticated maintenance process with a dry run and target-environment guard.
+The command uses DIRECT_URL and one transaction. It creates missing fictional categories, items, option groups, and options. Existing matching catalog records, settings, users, credentials, and orders are unchanged.
 
-## 9. Launch checklist
+## Deployment sequence
 
-- Owner approves provider accounts, region, currency/timezone, cost limits, and public demo disclaimer.
-- Required checks pass from a clean checkout on Node 24.
-- Environment validation passes with no secrets exposed to the client or logs.
-- Migrations apply successfully to a production-like database and recovery is understood.
-- Admin is provisioned securely; staff/admin role journeys pass.
-- Guest order, confirmation/status, menu change, and historical snapshot journeys pass.
-- Accessibility, responsive, security, rate-limit, and performance reviews are complete.
-- Contact retention/reset and incident/rollback procedures are recorded.
+1. Create the Supabase project in the selected region.
+2. Obtain the Transaction Pooler and Session Pooler connection strings.
+3. Configure DATABASE_URL, DIRECT_URL, DATABASE_POOL_MAX, AUTH_SECRET, and RATE_LIMIT_SECRET. Set AUTH_URL only if host inference requires it.
+4. Run npm ci, npm run db:generate, npm run db:validate, and npm run db:status.
+5. Run npm run db:deploy.
+6. Run npm run db:status again and confirm every committed migration is applied.
+7. Deploy the Vercel application from the reviewed commit.
+8. Provision the production administrator.
+9. Run the production demo catalog bootstrap and review settings/catalog data.
+10. Complete the [Hosted QA Checklist](HOSTED_QA.md).
 
-## 10. Rollback outline
+## Monitoring and recovery
 
-1. Stop/limit new deployments and identify the failing release.
-2. If the schema is backward-compatible, redeploy the last known-good application build.
-3. If data/schema is involved, avoid destructive reversal; use a reviewed forward migration/fix or restore into an isolated environment before any production action.
-4. Validate order creation/status, authentication, and data integrity.
-5. Record impact, remediation, and follow-up tests.
+Monitor application errors, latency, failed order creation, authentication abuse, rate-limit failures, and database connection pressure without logging customer data.
+
+Before public launch:
+
+- Assign monitoring and alert ownership.
+- Record Supabase backup/retention settings.
+- Rehearse database recovery in an isolated environment.
+- Define guest contact-data retention and redaction.
+
+Application rollback is safe only while the database remains backward-compatible. Otherwise, use a reviewed forward fix or restore into an isolated environment before changing production.
+
+## Demo data lifecycle
+
+- Label the service as a demonstration.
+- Encourage fictional contact details.
+- Purge or redact guest contact/address fields after the approved interval.
+- Preserve only synthetic or aggregate portfolio evidence.
+- Use authenticated maintenance procedures for catalog/order cleanup.
+
+## Launch checklist
+
+- Production variables are configured and absent from client output.
+- All migrations are applied.
+- The administrator and fictional catalog are present.
+- Public and staff journeys pass hosted QA.
+- HTTPS and security headers are correct.
+- Accessibility, responsive, and performance evidence is recorded.
+- Monitoring, retention, recovery, and rollback responsibilities are assigned.
