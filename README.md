@@ -4,7 +4,7 @@ Copper Spoon is a production-style restaurant ordering application for a fiction
 
 The project models the parts of online ordering that are easy to overlook: current availability and pricing, immutable order history, controlled status transitions, staff authorization, and safe public order tracking.
 
-**Deployment status:** the application is prepared for Vercel and Supabase PostgreSQL, but a public demo URL has not yet been verified.
+**Deployment status:** the Vercel application and Supabase PostgreSQL database have been verified through hosted QA.
 
 ## Features
 
@@ -27,6 +27,24 @@ The project models the parts of online ordering that are easy to overlook: curre
 - Protection against self-lockout and removal of the final active administrator.
 
 The application uses simulated payment choices only. It does not process card data, create customer accounts, manage drivers, or support multiple restaurants.
+
+## Product preview
+
+### Public menu
+
+![Copper Spoon public menu hero](docs/screenshots/desktop-menu-hero.png)
+
+### Item configuration
+
+![Copper Spoon burger item configurator](docs/screenshots/desktop-item-configurator.png)
+
+### Restaurant operations
+
+![Copper Spoon administrative analytics dashboard](docs/screenshots/desktop-admin-dashboard.png)
+
+### Responsive menu
+
+![Copper Spoon public menu on mobile](docs/screenshots/mobile-menu-hero.png)
 
 ## Technology
 
@@ -133,12 +151,12 @@ Vercel -> Next.js -> Prisma -> Supabase PostgreSQL
 
 Application traffic uses the Supabase Transaction Pooler through `DATABASE_URL`. Prisma CLI and migration commands use the Session Pooler through `DIRECT_URL`. Production migrations, administrator provisioning, and demo catalog creation are separate controlled steps.
 
-See [Deployment](docs/DEPLOYMENT.md), [Hosted QA](docs/HOSTED_QA.md), and [Screenshot Plan](docs/SCREENSHOTS.md).
+See [Deployment](docs/DEPLOYMENT.md), [Hosted QA](docs/HOSTED_QA.md), and [Screenshot Inventory](docs/SCREENSHOTS.md).
 
 ## Repository structure
 
 ```text
-docs/          Product, design, operations, and delivery documentation
+docs/          Product, design, screenshots, operations, and delivery documentation
 prisma/        Schema, migrations, development seed, and smoke check
 public/        Static images and public assets
 scripts/       Controlled operational commands

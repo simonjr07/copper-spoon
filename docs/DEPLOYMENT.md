@@ -2,7 +2,7 @@
 
 ## Status and topology
 
-The repository is prepared for deployment, but the public Vercel release and hosted QA are not yet complete.
+The application is deployed to Vercel with Supabase PostgreSQL, and the hosted QA and portfolio screenshot passes are complete.
 
 ~~~text
 Vercel -> Next.js -> Prisma -> Supabase PostgreSQL

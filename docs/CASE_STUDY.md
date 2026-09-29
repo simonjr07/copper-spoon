@@ -18,9 +18,29 @@ The application combines a mobile-first ordering flow with a role-protected staf
 
 Guests browse published dishes, configure choices, maintain a local cart, and submit pickup or delivery details without creating an account. Checkout returns a non-sequential public code. Confirmation and tracking show immutable order content, totals, status, and recorded timeline timestamps without exposing contact or staff data.
 
+The public menu pairs direct navigation with a focused restaurant identity and repository-local food imagery.
+
+![Copper Spoon public menu hero](screenshots/desktop-menu-hero.png)
+
+Item configuration makes required choices and estimated pricing explicit before anything enters the cart.
+
+![Copper Spoon burger item configurator](screenshots/desktop-item-configurator.png)
+
+The cart preserves each configuration separately and clearly distinguishes its estimate from server-authoritative checkout pricing.
+
+![Copper Spoon configured cart and order summary](screenshots/desktop-cart.png)
+
 ## Restaurant workflow
 
 Active staff use the dashboard and order queue to review and progress orders. Cancellation authority depends on role and current state. Administrators also manage categories, items, options, availability, and staff accounts.
+
+The protected dashboard summarizes current workload and recent operating activity without presenting simulated payment totals as revenue.
+
+![Copper Spoon administrative analytics dashboard](screenshots/desktop-admin-dashboard.png)
+
+Catalog management exposes publication and availability state while preserving the non-destructive lifecycle used by historical orders.
+
+![Copper Spoon administrative menu management](screenshots/desktop-menu-management.png)
 
 ## Architecture
 
@@ -57,6 +77,14 @@ The public flow supports mobile widths from 320 px. Administrative tables adapt 
 
 Repository-local WebP images use next/image with responsive sizing and fallback visuals.
 
+The same menu, item, and cart flows retain their hierarchy and controls at narrow mobile widths.
+
+![Copper Spoon public menu on mobile](screenshots/mobile-menu-hero.png)
+
+![Copper Spoon burger item configurator on mobile](screenshots/mobile-item-configurator.png)
+
+![Copper Spoon configured cart on mobile](screenshots/mobile-cart.png)
+
 ## Testing and delivery
 
 Vitest covers pricing, validation, checkout idempotency, snapshot handling, transitions, concurrency, credentials, authorization, staff safety, analytics, rate limiting, public data minimization, and production bootstrap guards.
@@ -71,7 +99,7 @@ Vercel -> Next.js -> Prisma -> Supabase PostgreSQL
 
 Application traffic uses the Supabase Transaction Pooler through DATABASE_URL. Prisma CLI and migrations use the Session Pooler through DIRECT_URL. Production migration, administrator provisioning, and fictional catalog creation are separate controlled operations.
 
-The public deployment and hosted QA evidence are not yet complete.
+The Vercel deployment, Supabase connection, hosted QA, and final portfolio screenshot pass are complete.
 
 ## Key engineering decisions
 
@@ -87,4 +115,3 @@ The public deployment and hosted QA evidence are not yet complete.
 - No real payments, customer accounts, notifications, driver tracking, or settings editor
 - No configured browser end-to-end test suite
 - Monitoring, retention, recovery rehearsal, and deployed performance evidence are pending
-- Hosted screenshots and a canonical public URL will be added only after QA

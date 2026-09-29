@@ -43,16 +43,15 @@ This document summarizes the completed delivery phases and the remaining operati
 - Added Vercel configuration and Supabase PostgreSQL connection guidance.
 - Added an idempotent settings migration and a guarded production-demo catalog bootstrap.
 - Added deployment, hosted QA, screenshot, and portfolio case-study documentation.
+- Completed the Vercel deployment and hosted QA pass.
+- Added the verified hosted screenshot inventory and integrated selected captures into the README and case study.
 
 ## Remaining before public launch
 
-- Complete the Vercel deployment and verify the canonical URL.
-- Run the hosted QA checklist.
 - Confirm contact-data retention and redaction procedures.
 - Assign monitoring and alert ownership.
 - Rehearse database recovery.
 - Record deployed accessibility and performance measurements.
-- Capture verified screenshots and update the README/case study with deployment evidence.
 
 ## Ongoing maintenance
 

@@ -1,48 +1,17 @@
-# Screenshot Plan
+# Screenshot Inventory
 
-Capture screenshots from the verified hosted deployment using fictional data. Review each image for emails, phone numbers, addresses, credentials, tokens, and internal cancellation notes before publishing.
+These screenshots were captured from the verified hosted demo on September 29, 2026. They contain fictional catalog and order data. The desktop cart and dashboard captures were conservatively cropped to remove browser status text and a personal administrator display name.
 
-## Public experience
+| Filename | Viewport | Page or feature | Case-study value |
+| --- | --- | --- | --- |
+| `desktop-menu-hero.png` | Desktop | Public menu hero | Establishes the restaurant identity, primary action, and editorial food imagery. |
+| `desktop-menu-catalog.png` | Desktop | Menu filters, search, and dish card | Shows catalog discovery, availability, pricing, and browsing controls. |
+| `desktop-item-configurator.png` | Desktop | Burger detail and option configuration | Demonstrates product detail, required choices, and server-revalidated pricing guidance. |
+| `desktop-cart.png` | Desktop | Configured cart and order summary | Shows distinct configurations, quantities, estimated totals, and the checkout path. |
+| `desktop-admin-dashboard.png` | Desktop | Operations analytics dashboard | Demonstrates protected operational metrics, status distribution, and seven-day activity. |
+| `desktop-menu-management.png` | Desktop | Administrative menu management | Shows catalog publication, availability, ordering, and edit controls. |
+| `mobile-menu-hero.png` | Mobile | Responsive public menu hero | Shows the two-column hero adapting cleanly to a narrow viewport. |
+| `mobile-cart.png` | Mobile | Responsive cart | Demonstrates readable configured items and touch-friendly quantity controls. |
+| `mobile-item-configurator.png` | Mobile | Responsive item configurator | Shows image, availability, product details, and options in a narrow layout. |
 
-1. Homepage: hero, restaurant proposition, and primary action
-2. Menu: categories, search, imagery, prices, and a sold-out item
-3. Item configurator: required and optional choices
-4. Cart: distinct configurations, quantities, and estimated subtotal
-5. Checkout: fictional delivery fields and simulated payment choices
-6. Confirmation/tracking: public code, snapshots, totals, and timeline
-
-Capture the homepage and customer critical path at desktop and 375 px mobile widths.
-
-## Staff experience
-
-1. Dashboard analytics
-2. Orders queue with mixed statuses and filters
-3. Order detail with timeline and a valid next action
-4. Menu management
-5. Staff management without passwords or sensitive credentials
-
-## Portfolio selection
-
-Recommended README set:
-
-- Homepage
-- Public menu
-- Dashboard analytics
-- Order detail
-
-Recommended case-study set:
-
-- Homepage desktop/mobile comparison
-- Customer-flow composite
-- Dashboard analytics
-- Order workflow detail
-- Catalog or staff administration
-
-## Capture standards
-
-- Use WebP or optimized PNG.
-- Keep text legible and avoid decorative device frames.
-- Use descriptive filenames and useful alt text.
-- Record viewport, deployment commit, and capture date.
-- Hide browser extensions and account chrome.
-- Do not fabricate screens, metrics, testimonials, revenue, customer counts, or production usage.
+All portfolio screenshots live in `docs/screenshots/`. No checkout, order-tracking, order-management, or staff-management screenshot was included in this capture set.
