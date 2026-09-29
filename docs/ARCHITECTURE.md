@@ -1,190 +1,133 @@
 # Architecture
 
-## 1. System shape
+## System overview
 
-Copper Spoon is one deployable Next.js App Router application backed by one PostgreSQL database. The browser, public routes, protected dashboard, authentication endpoints, server mutations, and read models live in the same codebase. A separate Express service would add operational and authorization complexity without a current requirement.
+Copper Spoon is a single Next.js App Router application backed by PostgreSQL.
 
-```text
+~~~text
 Browser
-  -> Next.js App Router
-       -> Server Components (reads and rendered views)
-       -> Server Actions (first-party form mutations)
-       -> Route Handlers (Auth.js and intentional HTTP interfaces)
-       -> Domain/service layer
-       -> Prisma data access
-  -> PostgreSQL
-```
+  -> Next.js on Vercel
+       -> Server Components
+       -> Server Actions
+       -> Auth.js Route Handlers
+       -> Domain services
+       -> Server-only repositories
+       -> Prisma
+  -> Supabase PostgreSQL
+~~~
 
-Vercel and Neon are the likely hosted-demo targets. Deployment remains portable to any supported Node.js host with PostgreSQL.
+The public site, staff workspace, authentication endpoints, domain rules, and database access live in one codebase. A separate API server would add operational and authorization complexity without serving a current requirement.
 
-The implemented database boundary uses stable Prisma ORM 7.10, `@prisma/adapter-pg`, and `pg`. Prisma Client is generated as ESM TypeScript into ignored `src/generated/prisma`; `src/server/db/prisma.ts` is the reusable server-only singleton and fails closed when `DATABASE_URL` is absent. The CLI loads `.env` through `prisma7.config.ts`; Next.js loads runtime environment variables through its normal server environment support.
+## Runtime boundaries
 
-## 2. Rendering and interaction
+- Server Components handle page reads and rendered views.
+- Server Actions handle first-party form mutations.
+- Route Handlers are limited to Auth.js and interfaces that benefit from HTTP semantics.
+- Client Components are small interactive boundaries for the cart, filters, dialogs, and forms.
+- Database and credential access stays in server-only modules or controlled scripts.
+- Every protected query and mutation performs its own authorization.
 
-- Server Components are the default for pages, layouts, data reads, and authorization-sensitive views.
-- Client Components are limited to interactive islands such as cart state, filters, dialogs, and optimistic controls.
-- Public menu reads may be cached with explicit tags. Availability/order/admin reads are dynamic or deliberately revalidated after mutation.
-- Server Actions serve first-party form mutations. Route Handlers are reserved for Auth.js, health/integration needs, or an interface that genuinely benefits from HTTP semantics.
-- Every Server Action and Route Handler is treated as directly callable: it validates input and performs its own authentication/authorization.
+## Data access
 
-## 3. Code organization
+Prisma ORM 7 uses the pg driver through @prisma/adapter-pg.
 
-```text
-src/
-  app/
-    menu/                  Public catalog list/detail routes
-    cart/                  Browser-persisted guest cart route
-    checkout/              Customer checkout route
-    order/[orderCode]/     Public bearer-code confirmation route
-    track-order/           Public order-code entry route
-    admin/
-      (protected)/         Protected dashboard, order workflow, and catalog management
-    api/                   Auth.js and explicit HTTP handlers
-    layout.tsx
-    page.tsx
-  components/              Reusable, domain-neutral UI
-  features/
-    auth/
-    cart/
-    checkout/
-    menu/
-    orders/
-    settings/
-    staff/
-  lib/                     Pure utilities, constants, formatting
-  server/
-    auth/                   Session and authorization helpers
-    db/                     Prisma client and database helpers
-    repositories/           Persistence operations where useful
-    services/               Transactional use cases and policies
-  types/                    Shared declarations only
-tests/                      Cross-feature integration fixtures/tests
-prisma/                     Schema, migrations, and fictional seed
-```
+- Runtime requests use DATABASE_URL, the Supabase Transaction Pooler connection.
+- Prisma CLI and migrations use DIRECT_URL, the Supabase Session Pooler connection configured in prisma7.config.ts.
+- src/server/db/prisma.ts owns the reusable runtime client.
+- DATABASE_POOL_MAX bounds each application instance's pool.
 
-Feature folders may own UI, Zod schemas, Server Actions, and pure domain helpers. Dependencies point inward: routes call feature/application behavior; application behavior calls server persistence; database-specific types do not leak into client bundles.
+Prisma Client is generated into the ignored src/generated/prisma directory.
 
-## 4. Request flows
+## Code organization
 
-### Public menu read
+~~~text
+src/app/         Routes, layouts, loading/error states, and handlers
+src/components/  Shared interface components
+src/features/    Feature UI, schemas, actions, and domain logic
+src/lib/         Framework-independent utilities
+src/server/      Authorization, repositories, transactions, and data access
+tests/           Automated tests
+prisma/          Schema, migrations, development seed, and smoke check
+scripts/         Controlled operational commands
+~~~
 
-1. `/menu` and `/menu/[slug]` Server Components call the server-only public catalog module.
-2. Prisma selects only catalog/settings fields; a pure policy layer applies publication/archive checks and returns purpose-built DTOs.
-3. `unstable_cache` caches catalog reads for five minutes under `public-menu` and `restaurant-settings` tags. Task 9 mutations will revalidate those tags after commit.
-4. The list page passes only its public DTO to the narrow `MenuBrowser` Client Component for live search and category filtering. Item-detail reads and rendering remain server-side.
-5. Published unavailable items remain visible as sold out; unpublished/archived items, unpublished categories, inactive option groups, and unavailable choices are omitted.
-6. Public image paths are allowlisted to repository-local `/images/...` assets before crossing the server/client boundary. `MenuVisual` uses responsive `next/image` fill/sizes and switches to the branded fallback after a missing path or load error.
+Routes call feature or application services. Services call server-only persistence modules. Prisma records are mapped to bounded view models before crossing into UI code.
 
-### Order creation
+## Core request flows
 
-1. Checkout submits a typed payload to a Server Action.
-2. Zod validates shape and conditional fulfilment/payment rules.
-3. A serializable PostgreSQL transaction first resolves the unique checkout token, then loads current restaurant settings and complete item/group/option records.
-4. Pure domain logic rejects disabled fulfilment/payment choices; unpublished, archived, sold-out, or hidden-category items; inactive/unavailable/wrong-item options; selection-bound violations; currency mismatches; and unmet delivery minimums.
-5. The service recalculates base, option, line, subtotal, delivery-fee, and total cents and creates the order, immutable item/option snapshots, and initial `PENDING` event through one nested write.
-6. A cryptographically random `CS-` code is retried on a uniqueness collision. A repeated checkout token returns the already-created public code rather than creating a duplicate order.
-7. The Client Component clears the browser cart only after success and navigates to a dynamic confirmation route that selects no contact/address/internal-ID fields.
+### Public catalog
 
-### Guest cart
+Public catalog queries return published categories and published, non-archived items. Sold-out items remain visible but cannot be ordered. Active option groups and available options are included.
 
-1. The server-rendered item detail passes its purpose-built public DTO to a narrow configurator Client Component.
-2. The configurator enforces currently rendered group types and min/max selection bounds, then snapshots only display data and integer-cent estimates into a cart line.
-3. A root React context/reducer owns cart actions so the header, detail configurator, and `/cart` route share state without a separate client store dependency.
-4. After client hydration, a versioned strict Zod schema restores `localStorage` data. Invalid, mixed-currency, unsafe-image, or unknown-version payloads fail closed to an empty cart; storage failures leave the in-memory cart usable.
-5. A line identity is the item ID plus sorted group/option IDs. Identical configurations merge quantities, while different choices remain separate lines.
-6. All cart content and totals remain untrusted convenience data. Checkout sends only item/option IDs and quantities; order creation independently re-reads publication, availability, choices, settings, and prices before an order can exist.
+Catalog results use a five-minute cache with public-menu and restaurant-settings tags. Successful catalog mutations invalidate public-menu.
 
-### Customer order status
+### Cart and checkout
 
-1. `/track-order` normalizes a submitted code to uppercase and redirects only when it matches the public `CS-` format; malformed and unknown codes converge on the same safe not-found experience.
-2. `/order/[orderCode]` is forced dynamic. Each page load calls a dedicated server-only public-order repository directly, without `unstable_cache`, so a normal refresh reads current `Order.status` and `OrderStatusEvent` rows.
-3. The Prisma query allowlists only the public code, lifecycle/payment/fulfilment labels, placed time, immutable item/option snapshots, persisted totals, and event status/time. It never selects contact/address data, internal IDs, staff actors, or notes.
-4. A pure mapper returns a purpose-built customer DTO, orders actual recorded events chronologically, and adds the restaurant timezone from settings. Formatting falls back to UTC if settings contain an invalid timezone.
-5. The page labels pickup and delivery `READY` states honestly and does not imply polling, notifications, live kitchen telemetry, driver dispatch, or an ETA.
+The cart is a versioned localStorage snapshot. It improves responsiveness but is not trusted by the server.
 
-### Staff mutation
+Checkout:
 
-1. The protected route verifies a session and `orders:read` permission for early UX redirection and fresh server-only queue/detail reads.
-2. The mutation independently calls `requirePermission("orders:update-status")`, deriving actor ID and role from the current active database user.
-3. Zod parses the order ID, desired status, concurrency timestamp, and bounded optional reason. Inside the transaction the service re-reads the authoritative status and applies the explicit transition/cancellation policy.
-4. A conditional `id + status + updatedAt` update detects a concurrent write. The update and actor-attributed `OrderStatusEvent` are committed together at serializable isolation; either both happen or neither happens.
-5. Admin paths are revalidated and the action returns a safe success, validation, policy, or stale-state message. The public reader remains uncached and never projects event notes/actors.
+1. Validates the request with Zod.
+2. Applies the PostgreSQL-backed rate limit.
+3. Resolves the checkout idempotency token.
+4. Reads current settings, catalog records, and option rules.
+5. Recalculates all amounts in integer cents.
+6. Creates the order, immutable snapshots, and initial event in one serializable transaction.
+7. Returns a non-sequential public order code.
 
-### Admin catalog mutation
+Unavailable or inconsistent data rejects the entire operation.
 
-1. `/admin/menu` requires `menu:read`, giving staff a fresh read-only overview. Category/item edit routes and every action independently require `categories:write` or `menu:write`, which are admin-only capabilities.
-2. Zod normalizes slugs, parses booleans/order fields, converts strict decimal text directly to integer cents, and allowlists repository-local image paths. Database unique/relationship failures are mapped to safe domain messages.
-3. The server-only admin catalog repository verifies item/group/option ownership and prevents active selection bounds from exceeding currently available choices. Categories are unpublished rather than deleted; item archive atomically sets archived and unpublished.
-4. Successful writes immediately expire only the `public-menu` tag and revalidate the relevant admin route. Failed writes never invalidate the cache. Public catalog policy continues to hide unpublished categories/items and archived items while retaining published unavailable items as sold out.
-5. Catalog tables and order snapshot tables are never updated together. Existing `OrderItem` and `OrderItemOption` snapshot names/prices therefore remain immutable when current catalog data changes.
+### Public order status
 
-### Staff-account administration
+/order/[orderCode] performs an uncached indexed lookup. The public model contains the order code, status, fulfilment/payment labels, placed time, immutable item snapshots, persisted totals, and event status/timestamps.
 
-1. `/admin/users` and every account mutation independently require the admin-only `staff:manage` capability. Staff cannot access the list, edit routes, or direct Server Actions.
-2. Zod normalizes email, validates role/status identifiers, and reuses the 12–72-byte strong-password policy. Passwords are hashed with bcrypt cost 12 before persistence and never enter a response DTO.
-3. Profile, role, and status changes load the target in a serializable transaction. Removing an active admin counts active admins inside that same transaction and fails when only one remains; PostgreSQL serialization conflicts surface as safe retry messages.
-4. Self-service in this workflow is deliberately narrow: an admin may edit their own name/email, but cannot change their own role/status or use the admin-driven password-replacement action on themselves.
-5. User queries allowlist identity, role/status, and operational timestamps. `passwordHash` is selected only by credential verification and written only by creation/reset code.
+Contact details, delivery addresses, staff actors, event notes, checkout tokens, and internal IDs are excluded.
 
-### Operational dashboard analytics
+### Staff order workflow
 
-1. `/admin` requires the `analytics:read` capability, which is available to both active `STAFF` and `ADMIN` users, and is forced dynamic so operators do not receive a stale dashboard cache.
-2. A dedicated server-only repository performs bounded aggregate queries for status, today's restaurant-local orders, fulfilment type, recent orders, seven-day activity, and popular items. Independent reads run concurrently and select only fields needed by the dashboard.
-3. The repository converts restaurant-local midnight boundaries to UTC for database filtering. Daily SQL grouping applies the configured IANA timezone before producing `YYYY-MM-DD` keys; invalid timezone settings fall back to UTC.
-4. A pure feature mapper fills absent statuses, fulfilment types, and days with zero; sorts and limits recent orders; and returns a purpose-built DTO with links instead of raw internal IDs.
-5. Popular-item analytics group immutable `OrderItem.itemNameSnapshot` values and sum persisted quantities across non-cancelled orders. They never join mutable menu names or recalculate historical order values.
+The order queue and details use fresh operational reads. Status updates re-read the current order, enforce the role-aware state machine, compare the submitted concurrency timestamp, and append an actor-attributed event in the same serializable transaction.
 
-## 5. Authentication and authorization
+### Catalog administration
 
-Auth.js v5 credentials authentication verifies bcrypt cost-12 hashes for active users only. It uses encrypted JWT sessions with an eight-hour maximum age and Auth.js-managed secure cookie behavior. The session exposes only safe user identity, role, and status; it never serializes `passwordHash`.
+Staff can read the complete catalog. Administrators can create and edit categories, items, option groups, and options. Archive and unpublish operations preserve historical references. Catalog writes never modify order snapshots.
 
-`src/proxy.ts` performs only an optimistic session-presence redirect for protected `/admin/*` routes. The protected route group and reusable server authorization helpers then re-read the current `User` row. Consequently, a deleted or `DISABLED` user is rejected on the next protected request even if an older JWT remains valid.
+### Staff administration
 
-Authorization uses `requireAuthenticatedUser`, `requireActiveUser`, `requireRole`, `requirePermission`, and the centralized role-capability map rather than scattered string comparisons. Page/layout protection improves navigation but does not replace checks at each data access, Server Action, or Route Handler boundary.
+Staff-account operations require the staff:manage capability. Passwords use bcrypt cost 12. Role/status changes use a serializable transaction to preserve at least one active administrator. Administrators cannot disable themselves or change their own role through this workflow.
 
-Admin provisioning is an explicit CLI use case, never startup or seed behavior. Development mode requires `NODE_ENV=development`; production mode additionally requires an exact confirmation token. Both accept validated environment-only input, require a unique normalized email, hash with bcrypt cost 12, and never update an existing account. Production recovery creates a new admin through the same controlled path.
+### Dashboard analytics
 
-Public abuse controls use an atomic PostgreSQL `RateLimitBucket` upsert so limits remain consistent across Vercel instances. Request IP/account identities are HMAC-keyed before storage, and login, checkout, and order lookup fail closed if the limiter is unavailable. The pure policy/HMAC layer is separated from the server-only request/Prisma adapter for deterministic tests.
+The dashboard uses fresh server-side aggregates for status counts, the restaurant's current day, recent orders, fulfilment mix, seven-day activity, and popular immutable item snapshots. It does not report payment settlement or revenue.
 
-## 6. Data integrity
+## Authentication and authorization
 
-- Prisma migrations are the versioned database contract.
-- PostgreSQL 17 is the local/deployment compatibility baseline; timestamps use `TIMESTAMPTZ(3)`.
-- Multi-record writes use database transactions.
-- Unique/check constraints and foreign keys enforce invariants where PostgreSQL can do so reliably.
-- Money uses integer minor units; quantities and option bounds are positive/non-negative constrained values.
-- Orders retain snapshot fields and persisted totals.
-- Custom checks in migration SQL enforce cents/quantity bounds, total equations, option bounds, delivery requirements, payment/fulfilment compatibility, public-code shape, and the settings singleton.
-- Status updates use optimistic concurrency (for example `updatedAt` or current-status predicate) to prevent silent staff overwrite.
-- Menu entities use availability/active/archive semantics when history refers to them.
+Auth.js credentials authentication issues encrypted JWT sessions with an eight-hour lifetime. Session claims support navigation, but protected operations re-read the current database user so disabled accounts lose access on their next server request.
 
-See [Database Design](DATABASE.md).
+A centralized capability map defines ADMIN and STAFF permissions. Proxy and layout redirects improve navigation but are not authorization boundaries.
 
-## 7. Error and observability approach
+## Data integrity
 
-Expected validation, conflict, unauthorized, and not-found cases return stable safe errors. Unexpected exceptions are logged server-side with correlation context, then reduced to a generic user response. Logging redacts secrets and customer contact fields by default.
+- PostgreSQL migrations define the database contract.
+- Money uses integer minor units.
+- Orders store immutable catalog snapshots and persisted totals.
+- Multi-record invariants use transactions.
+- Database checks enforce amount, quantity, selection, fulfilment, payment, code, and singleton rules.
+- Optimistic predicates prevent silent concurrent status overwrites.
+- Catalog and staff records use non-destructive lifecycle states.
 
-Operational events worth observing include login failures, denied authorization, order creation failures, invalid status transitions, and seed/provisioning actions. Vendor selection for monitoring is deferred.
+See [Database Design](DATABASE.md) and [Architecture Decisions](DECISIONS.md).
 
-## 8. Performance and accessibility
+## Performance and accessibility
 
-- Stream route sections when it improves meaningful rendering; avoid client waterfalls.
-- Query only required columns and index frequent filters.
-- Repository-local WebP food imagery is delivered through `next/image` with fixed-ratio containers to prevent layout shift. Only the homepage hero is preloaded; menu-card and detail images retain lazy loading.
-- Generated source PNGs remain outside the repository. The selected, optimized WebP derivatives and reproducible prompt/mapping notes are the maintained application assets.
-- Keep cart interactions local and responsive, with server reconciliation at checkout.
-- Build semantic HTML first and test keyboard, screen-reader naming, focus behavior, contrast, responsive layout, and reduced motion.
-- Keep the Prisma pool bounded (`DATABASE_POOL_MAX`, default 5) for serverless/Neon connection budgets. Dashboard aggregates remain bounded/concurrent, public catalog reads retain tagged caching, and the CSP remains static so public pages are not forced dynamic solely for nonce generation.
+- Public catalog reads are cached; order and administrative reads remain fresh.
+- Database queries select required fields and use indexes for common filters.
+- Repository-local WebP images use responsive next/image sizing.
+- Cart interactions stay client-local until checkout.
+- The interface uses semantic HTML, visible focus, accessible names, reduced-motion support, and responsive layouts.
+- A static Content Security Policy preserves public-page cacheability while allowing the inline behavior required by Next.js.
 
-## 9. Architecture constraints
+## Constraints and future extensions
 
-- No separate backend, microservices, event bus, or background worker until a demonstrated requirement exists.
-- No database access from Client Components.
-- No generic public CRUD API by default.
-- No real payment SDK or card data.
-- No secrets in `NEXT_PUBLIC_*` variables or source control.
-- No historical totals calculated from mutable menu tables.
+The current architecture does not include microservices, a generic public CRUD API, background workers, real payment services, or public customer accounts.
 
-## 10. Evolution points
-
-Potential future additions—notification delivery, queued work, external POS integration, or object storage—must be introduced behind clear service interfaces and documented in `DECISIONS.md`. They are not part of the initial delivery.
+Notifications, external POS integration, background jobs, or object storage should be added behind documented service boundaries when a verified requirement exists.

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 import { PublicHeader } from "@/components/public-header";
 import { MenuBrowser } from "@/features/menu/menu-browser";
@@ -24,33 +25,45 @@ export default async function MenuPage() {
       <PublicHeader />
       <main id="main-content" tabIndex={-1}>
         <section className="overflow-hidden bg-[#35241d] text-white">
-          <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1fr_18rem] lg:px-12 lg:py-24">
-            <div className="relative z-1">
+          <div className="mx-auto grid w-full max-w-7xl items-center gap-8 px-5 py-10 sm:px-8 sm:py-12 md:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)] md:gap-10 lg:px-12 lg:py-14">
+            <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e6ad87]">
                 The public menu
               </p>
-              <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-[0.98] tracking-[-0.055em] sm:text-7xl">
+              <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-5xl lg:text-6xl">
                 Familiar food, thoughtfully finished.
               </h1>
-              <p className="mt-7 max-w-2xl text-base leading-8 text-[#e6d9ce] sm:text-lg">
+              <p className="mt-5 max-w-2xl text-base leading-7 text-[#e6d9ce] sm:text-lg sm:leading-8">
                 A fictional seasonal menu from {menu.restaurantName}, built around warm flavors, crisp produce, and easy choices.
               </p>
+              <a
+                className="mt-7 inline-flex min-h-11 items-center justify-center rounded-full bg-[#d77a50] px-6 py-3 text-sm font-semibold text-white shadow-[0_14px_32px_-20px_rgba(0,0,0,0.75)] transition hover:bg-[#e18b63] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f3c4a8]"
+                href="#menu-catalog"
+              >
+                Browse menu
+              </a>
             </div>
-            <div className="relative hidden items-end justify-end lg:flex" aria-hidden="true">
-              <div className="relative size-64 rounded-full border border-white/15 bg-[#b85d38] shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
-                <span className="absolute inset-8 rounded-full border border-white/25" />
-                <span className="absolute inset-[4.5rem] rounded-full bg-[#f2c27f]" />
-                <span className="absolute left-2 top-5 h-52 w-10 -rotate-12 rounded-full border border-white/15" />
-              </div>
+            <div className="relative aspect-[4/3] min-w-0 overflow-hidden rounded-[1.75rem] border border-white/15 bg-[#5a3c2d] shadow-[0_28px_65px_-32px_rgba(0,0,0,0.85)]">
+              <Image
+                alt="Copper Spoon burger with herb fries and sauce on a warm ceramic plate"
+                className="object-cover"
+                fill
+                preload
+                sizes="(max-width: 767px) calc(100vw - 2.5rem), (max-width: 1279px) 42vw, 32rem"
+                src="/images/menu/copper-spoon-burger.webp"
+              />
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-white/10"
+              />
             </div>
-            <span
-              aria-hidden="true"
-              className="absolute -bottom-28 -left-20 size-72 rounded-full border border-white/8"
-            />
           </div>
         </section>
 
-        <div className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-12">
+        <div
+          className="mx-auto w-full max-w-7xl scroll-mt-28 px-5 py-10 sm:px-8 sm:py-14 lg:px-12"
+          id="menu-catalog"
+        >
           {menu.categories.length === 0 ? (
             <CatalogEmptyState
               description="Published categories will appear here as soon as the kitchen releases them."

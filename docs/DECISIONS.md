@@ -1,186 +1,171 @@
 # Architecture Decisions
 
-This lightweight decision log records choices that materially constrain future work. New decisions should include context, choice, consequences, and date. Do not rewrite accepted history; mark an entry superseded and add a replacement.
+This log records decisions that materially constrain the application. Superseded decisions should be marked and replaced rather than silently rewritten.
 
-## ADR-001: One Next.js full-stack application
+## ADR-001: Single Next.js application
 
 - Status: Accepted
-- Date: 2026-09-27
-- Decision: Use the Next.js App Router for UI, server rendering, first-party mutations, and intentional HTTP handlers. Do not create a separate Express backend.
-- Why: The product has one client and a controlled scope. One deployable keeps types, authorization, transactions, CI, and operations coherent.
-- Consequence: Server boundaries must still be explicit; route files should not become an unstructured service layer.
+- Decision: Use the Next.js App Router for rendering, first-party mutations, authentication endpoints, and server-side application logic.
+- Rationale: One deployable keeps types, authorization, transactions, and operations coherent for a single client.
+- Consequence: Route files delegate to feature and server modules rather than becoming a second service layer.
 
 ## ADR-002: PostgreSQL and Prisma
 
-- Status: Accepted and implemented
-- Date: 2026-09-27
-- Decision: Use PostgreSQL 17 locally through Docker and later in the hosted demo through Neon. Use stable Prisma ORM 7.10 with `@prisma/adapter-pg`/`pg`, a generated ESM client, and reviewed SQL migrations.
-- Why: Orders, catalog relationships, authorization, and analytics are relational and need strong transactions/constraints.
-- Consequence: The generated client is recreated rather than committed; runtime connections require the driver adapter. Prisma 8 remains deferred while it is a release candidate.
+- Status: Accepted
+- Decision: Use PostgreSQL 17 with Prisma ORM 7, the pg driver adapter, generated ESM client, and reviewed SQL migrations.
+- Rationale: Orders, catalog relationships, staff authorization, analytics, and rate limits require relational constraints and transactions.
+- Consequence: Prisma Client is generated rather than committed. Runtime and CLI connections are configured separately.
 
-## ADR-003: Immutable order snapshots
+## ADR-003: Integer money and immutable order snapshots
 
 - Status: Accepted
-- Date: 2026-09-27
-- Decision: Persist item/option display names and prices on order-owned rows at submission, plus persisted order totals.
-- Why: Mutable catalog values cannot be a historical commercial record.
-- Consequence: Some data is intentionally duplicated. All historical display and analytics paths use snapshot/order values.
+- Decision: Store money as integer minor units. Store item and option names/prices on order-owned rows at submission.
+- Rationale: Floating-point values are unsuitable for money, and mutable catalog records are not a reliable historical record.
+- Consequence: Snapshot data is duplicated by design. Historical views and analytics use snapshots and persisted totals.
 
-## ADR-004: Integer minor-unit money
-
-- Status: Accepted
-- Date: 2026-09-27
-- Decision: Store monetary values as integers in the smallest currency unit plus an explicit currency code.
-- Why: Avoid floating-point rounding and make calculations/test assertions deterministic.
-- Consequence: Formatting and currency compatibility are centralized; initial release has one ordering currency.
-
-## ADR-005: Credentials auth with explicit roles
-
-- Status: Accepted and implemented
-- Date: 2026-09-27
-- Decision: Use Auth.js v5 credentials authentication, bcrypt cost 12, encrypted eight-hour JWT sessions, active/disabled account status, and centralized `ADMIN`/`STAFF` capabilities. No public registration.
-- Why: It demonstrates appropriate staff security while matching the brief.
-- Consequence: Auth.js v5 remains a beta package even though it provides the current App Router/Next.js 16 API. Track updates deliberately. JWT role/status is advisory; secure helpers re-read `User` before protected work. Development provisioning is explicit and environment-driven; production bootstrap and password replacement remain controlled future work.
-
-## ADR-006: Server-first UI and narrow client boundaries
+## ADR-004: Credentials authentication with roles
 
 - Status: Accepted
-- Date: 2026-09-27
-- Decision: Use Server Components for reads/views by default and Client Components only for necessary interactivity.
-- Why: This limits shipped JavaScript and prevents accidental server-data exposure.
-- Consequence: Data passed into client islands must be explicitly shaped and serializable.
+- Decision: Use Auth.js credentials authentication, bcrypt cost 12, encrypted eight-hour JWT sessions, active/disabled account status, and ADMIN/STAFF capabilities.
+- Rationale: The restaurant workspace needs controlled staff access without public registration.
+- Consequence: Protected operations re-read the database user instead of relying only on session claims.
 
-## ADR-007: Server Actions for first-party mutations
-
-- Status: Accepted
-- Date: 2026-09-27
-- Decision: Prefer validated, authorized Server Actions for UI mutations. Reserve Route Handlers for Auth.js or a real HTTP-interface requirement.
-- Why: It fits the single Next.js client without creating a redundant internal REST layer.
-- Consequence: Actions are treated as externally reachable POST endpoints and must never rely on hidden UI controls for security.
-
-## ADR-008: No real payments
+## ADR-005: Server-first rendering and Server Actions
 
 - Status: Accepted
-- Date: 2026-09-27
-- Decision: Support only `PAY_ON_PICKUP`, `PAY_ON_DELIVERY`, and `DEMO_CARD`; do not integrate a processor or collect card details.
-- Why: Real payments add compliance and operational risk outside the portfolio goal.
-- Consequence: UI and documentation must clearly label simulated behavior, and analytics must not imply settled real revenue.
+- Decision: Use Server Components for reads and Server Actions for first-party mutations. Client Components are limited to interactive boundaries.
+- Rationale: This limits browser JavaScript and keeps data and authorization logic on the server.
+- Consequence: Server Actions are treated as network-reachable endpoints and perform their own validation and authorization.
 
-## ADR-009: Database defaults and public order identity
+## ADR-006: Simulated payments only
 
-- Status: Accepted and implemented
-- Date: 2026-09-27
-- Decision: Use USD integer cents, UTC database instants, default restaurant timezone `America/New_York`, CUID internal IDs, and a separate unique non-sequential `CS-…` order code. Snapshot delivery address columns directly on `Order`.
-- Why: These choices give deterministic money/history, timezone-safe operations, non-enumerable customer references, and a stable delivery receipt without premature address abstractions.
-- Consequence: Order creation must generate the public code securely, normalize email, and populate conditional delivery fields. The database enforces code shape, address completeness, and totals.
+- Status: Accepted
+- Decision: Support PAY_ON_PICKUP, PAY_ON_DELIVERY, and DEMO_CARD without a payment processor.
+- Rationale: Real payments add compliance and operational risk outside the portfolio scope.
+- Consequence: The application does not collect card data or claim payment settlement.
 
-## ADR-010: Database checks beyond Prisma schema
+## ADR-007: Public order identity
 
-- Status: Accepted and implemented
-- Date: 2026-09-27
-- Decision: Add reviewed PostgreSQL check constraints to migration SQL for invariants Prisma Schema Language cannot express.
-- Why: Critical money, quantity, option-bound, fulfilment, snapshot, and singleton rules should fail closed even if an application path is defective.
-- Consequence: Migration SQL is part of the data contract and must be reviewed whenever the Prisma schema changes; schema validation alone does not validate custom checks.
+- Status: Accepted
+- Decision: Use CUID internal IDs and a separate random CS- public code. Store delivery address fields on the order.
+- Rationale: Customers need a stable non-sequential reference, and the delivery record must survive later changes.
+- Consequence: Public queries use the code and return a restricted customer view model.
 
-## ADR-011: Public catalog visibility and caching
+## ADR-008: Database checks beyond Prisma schema
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Public catalog DTOs include only published categories and published, non-archived items. Published unavailable items remain visible as sold out. Inactive option groups and unavailable choices are omitted. Server-only Prisma reads use a five-minute cache plus `public-menu` / `restaurant-settings` tags.
-- Why: Guests need an honest view of recognizable dishes even during temporary sell-outs, while draft/archive/admin state must remain private. A short cache reduces repeated catalog reads without making availability indefinitely stale.
-- Consequence: Task 9 catalog/settings mutations must invalidate the relevant cache tags after commit. Order creation in Task 6 must independently re-read price/publication/availability and never trust the browse DTO or cached client state.
+- Status: Accepted
+- Decision: Add PostgreSQL check constraints for invariants not expressible in Prisma Schema Language.
+- Rationale: Amount equations, quantity bounds, selection rules, delivery requirements, and singleton behavior should fail closed in the database.
+- Consequence: Migration SQL is part of the reviewed data contract.
 
-## ADR-012: Repository-local generated food imagery
+## ADR-009: Public catalog caching
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Use one cohesive AI-generated editorial food-photography set, retain only optimized WebP derivatives under `public/images`, and reference menu assets through the existing optional `MenuItem.imageUrl`. Serve imagery with `next/image`; preload only the homepage hero and provide a branded fallback for missing images.
-- Why: Local generated assets avoid hotlink, licensing, availability, and remote-host configuration risks while establishing a stable image contract before cart work.
-- Consequence: New menu items need a descriptive local filename, safe `/images/menu/...` seed path, meaningful alt text, web optimization, and a visual review against the established shoot. Source generation prompts/mapping are recorded in `IMAGE_ASSETS.md`; a future replacement must preserve filenames or update seed data deliberately.
+- Status: Accepted
+- Decision: Cache public catalog reads for five minutes under public-menu and restaurant-settings tags. Keep order and administrative reads fresh.
+- Rationale: Catalog traffic benefits from caching, while availability and operational data require predictable freshness.
+- Consequence: Successful catalog mutations invalidate public-menu after commit.
 
-## ADR-013: Versioned browser cart with server-authoritative checkout
+## ADR-010: Repository-local food imagery
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Keep the pre-checkout guest cart in a small React context/reducer and persist a versioned, strictly validated display snapshot in `localStorage`. Use item plus sorted option IDs as configuration identity and integer cents for estimates.
-- Why: Guests get fast cross-page cart behavior without accounts, database writes, or another state dependency, while corrupt/stale browser data can be discarded safely.
-- Consequence: The cart is device/browser-local and can become stale. Stored names, prices, images, availability, and totals are never trusted by order creation; checkout re-reads all referenced catalog records, revalidates selection bounds, reprices, and creates snapshots atomically.
+- Status: Accepted
+- Decision: Store optimized WebP food images under public/images and serve them through next/image.
+- Rationale: Local assets avoid hotlink, licensing, availability, and remote-host configuration risks.
+- Consequence: Catalog image paths are limited to safe local /images/... values and missing images use a fallback.
 
-## ADR-014: Serializable, idempotent checkout transaction
+## ADR-011: Versioned browser cart
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Execute settings/catalog reads, authoritative repricing, and nested order/snapshot/event creation in one serializable Prisma transaction. Use a client-generated UUID protected by a nullable unique `Order.checkoutToken`, plus a 50-bit cryptographically random `CS-` public code.
-- Why: The browser cart can be stale or hostile, concurrent catalog changes must not create mixed snapshots, lost responses must be safely retryable, and customers must never receive an internal database identifier.
-- Consequence: Uniqueness and serialization conflicts retry up to four complete transactions. Existing rows can retain a null checkout token. Task 13 still adds request-rate limiting and hosted retention; the bearer-code route now provides the customer order-status experience.
+- Status: Accepted
+- Decision: Keep the pre-checkout cart in a React context/reducer and persist a validated versioned snapshot in localStorage.
+- Rationale: Guests get responsive cross-page cart behavior without accounts or pre-checkout database writes.
+- Consequence: Stored names, prices, totals, and availability are advisory; checkout reloads authoritative records.
 
-## ADR-015: Fresh, minimal bearer-code order status
+## ADR-012: Serializable and idempotent checkout
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Extend `/order/[orderCode]` into confirmation plus durable status rather than creating another order-detail route. Use an uncached server-only Prisma query and an explicit customer DTO; add `/track-order` as a progressive-enhancement code entry point.
-- Why: Customers need current recorded state without accounts, while a separate public model prevents accidental exposure of contact, address, staff, notes, internal IDs, or mutable catalog data.
-- Consequence: Every refresh performs a small indexed order/settings query and shows only real `OrderStatusEvent` rows. Public codes remain bearer credentials. Task 13 must rate-limit lookup attempts; no automatic polling, notifications, driver tracking, or ETA is claimed.
+- Status: Accepted
+- Decision: Validate and create an order in one serializable transaction. Use a client-generated UUID stored as a unique checkout token.
+- Rationale: Concurrent catalog changes and lost responses must not create mixed snapshots or duplicate orders.
+- Consequence: Supported uniqueness and serialization conflicts retry. A committed token resolves to the existing public code.
 
-## ADR-016: Explicit order workflow and bounded cancellation
+## ADR-013: Public order tracking
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Normal processing advances exactly one edge through `PENDING → CONFIRMED → PREPARING → READY → COMPLETED`. Staff cancellation ends after `CONFIRMED`; admins may additionally cancel `PREPARING`. No role may cancel `READY` or a terminal order, and every cancellation requires a stored reason.
-- Why: A small explicit state machine is easier to operate, audit, and test than arbitrary status writes. Admin late-stage authority handles exceptional kitchen cases without allowing cancellation after the order is ready.
-- Consequence: The server re-reads current state, uses `updatedAt` only as a stale-screen token, conditionally updates the row, and inserts the actor-attributed event in one serializable transaction. Public DTOs continue to omit internal notes and actors.
+- Status: Accepted
+- Decision: Use /order/[orderCode] for confirmation and status, with an uncached restricted query and /track-order as the code-entry route.
+- Rationale: Customers need current recorded status without an account.
+- Consequence: The public view omits contact, address, staff, notes, tokens, internal IDs, polling, notifications, and live delivery claims.
 
-## ADR-017: Non-destructive catalog lifecycle and targeted cache expiry
+## ADR-014: Controlled order state machine
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Categories leave the public menu by unpublishing rather than deletion. Menu items distinguish draft, published, temporarily unavailable, and archived states; archive also unpublishes. Option groups become inactive and options unavailable instead of being destructively removed. Every successful catalog mutation immediately expires only the `public-menu` cache tag.
-- Why: Catalog relationships and historical orders need stable references, sold-out dishes should remain discoverable, and operators need public changes to appear immediately without clearing unrelated site/settings caches.
-- Consequence: Admin forms expose lifecycle toggles and an explicit archive confirmation. Active option selection bounds cannot exceed available choices. Catalog mutations never update order-owned snapshots, and `restaurant-settings` is not invalidated by catalog-only changes.
+- Status: Accepted
+- Decision: Normal processing follows PENDING -> CONFIRMED -> PREPARING -> READY -> COMPLETED. STAFF may cancel through CONFIRMED; ADMIN may also cancel PREPARING.
+- Rationale: A small state machine is easier to operate, audit, and test than arbitrary status writes.
+- Consequence: Updates use optimistic concurrency and append an actor-attributed event in the same transaction.
 
-## ADR-018: Transactional staff lifecycle and strict self-protection
+## ADR-015: Non-destructive catalog lifecycle
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Staff accounts are disabled rather than deleted. Removing an active admin role/status is guarded inside a serializable transaction so at least one active admin remains. Admins may edit their own name/email but cannot change their own role/status or use the admin password-replacement path on themselves.
-- Why: History-bearing actor references and operational recovery require durable accounts, while strict self-controls reduce accidental lockout. Serializable isolation prevents concurrent count-then-update write skew.
-- Consequence: Another active admin is required for an admin's demotion, disablement, or controlled password replacement. Self-password recovery remains a separate future operational process. Database serialization conflicts require a fresh review/retry.
+- Status: Accepted
+- Decision: Categories are unpublished, items are archived/unpublished, groups are deactivated, and options become unavailable instead of being deleted through normal workflows.
+- Rationale: Historical references and order snapshots must remain stable.
+- Consequence: Catalog mutations cannot modify order-owned snapshot rows.
 
-## ADR-019: Fresh timezone-aware operational analytics
+## ADR-016: Staff lifecycle and administrator safety
 
-- Status: Accepted and implemented
-- Date: 2026-09-28
-- Decision: Render `/admin` from uncached, server-only aggregate queries available to both active staff roles. Define "today" and seven-day buckets in the restaurant's configured IANA timezone, and compute popular items from immutable order-item name snapshots while excluding cancelled orders.
-- Why: Restaurant operators need current workload and fulfilment signals, calendar days must match the restaurant rather than the server, and historical item reporting must survive catalog renames or archival.
-- Consequence: Each dashboard request performs bounded concurrent aggregates and a small recent-order query. Missing statuses/days become explicit zeroes, invalid timezone settings fall back to UTC, private order fields never enter the dashboard DTO, and no metric is described as settled revenue or payment performance.
+- Status: Accepted
+- Decision: Staff accounts are disabled rather than deleted. Role/status changes preserve at least one active administrator in a serializable transaction.
+- Rationale: Actor history and recovery require durable accounts, and concurrent changes must not lock out administration.
+- Consequence: Administrators cannot disable themselves, change their own role, or replace their own password through the staff-management workflow.
 
-## ADR-020: Local, server-first responsive interface system
+## ADR-017: Operational analytics
 
-- Status: Accepted and implemented
-- Date: 2026-09-29
-- Decision: Keep the existing Tailwind-based warm Copper Spoon visual direction and standardize a small set of repository-local layout, surface, control, button, badge, focus, loading, and error patterns. Retain Server Components for reads and introduce client boundaries only for existing interactions and active-path navigation.
-- Why: The product needs consistent accessible behavior from 320 px through desktop without a large component library, heavy charting dependency, or architecture rewrite.
-- Consequence: Shared CSS component utilities and focused React components now carry the visual contract. Admin tables use responsive cards, navigation scrolls safely on narrow screens, motion respects user preferences, private flows use `noindex`, and route error boundaries show safe recovery actions without technical details.
+- Status: Accepted
+- Decision: Compute fresh dashboard aggregates in the restaurant timezone and derive popular items from immutable order snapshots, excluding cancelled orders.
+- Rationale: Operators need current workload data that survives catalog changes.
+- Consequence: Dashboard results do not represent payment settlement or revenue.
 
-## ADR-021: Durable abuse limits and static browser hardening
+## ADR-018: Responsive interface system
 
-- Status: Accepted and implemented
-- Date: 2026-09-29
-- Decision: Protect login, checkout, and public order lookup with atomic fixed-window PostgreSQL buckets keyed by action-scoped HMAC identity digests. Apply a route-wide static CSP and security-header set; use a small configurable Prisma pool for serverless deployment.
-- Why: Instance-local counters do not coordinate across Vercel processes, plaintext identifiers are unnecessary, and nonce-based CSP would force dynamic rendering across otherwise cacheable public pages. A database-backed design fits the existing Neon dependency without a new paid service.
-- Consequence: The rate-limit migration must precede application traffic, protected surfaces fail closed if it is unavailable, and expired rows are pruned opportunistically. The CSP intentionally permits framework-required inline script/style behavior and development-only `unsafe-eval`; tightening it requires measured nonce/dynamic-render tradeoffs.
+- Status: Accepted
+- Decision: Use a small Tailwind-based design system with shared layout, control, focus, loading, error, and responsive patterns.
+- Rationale: The application needs consistent behavior from 320 px through desktop without a large UI dependency.
+- Consequence: Operational tables adapt to mobile cards and motion respects user preferences.
 
-## ADR-022: Explicit production admin provisioning and recovery
+## ADR-019: Durable rate limits and static security headers
 
-- Status: Accepted and implemented
-- Date: 2026-09-29
-- Decision: Extend the existing one-time CLI with an environment-matched production mode and exact confirmation value. It creates only a new active admin from injected credentials, refuses duplicate normalized email, never updates existing users, and never emits passwords or raw database failures.
-- Why: A first production administrator and lockout recovery need a documented path, but automatic seeds, shared credentials, and in-place password overrides are unsafe.
-- Consequence: Operators must run the command from a protected one-time job/shell, remove temporary variables immediately, and use a new unique recovery address. Existing-account repair remains an authenticated multi-admin workflow.
+- Status: Accepted
+- Decision: Protect login, checkout, and public tracking with atomic PostgreSQL fixed-window buckets keyed by HMAC digests. Apply a static route-wide security-header set.
+- Rationale: In-memory counters do not coordinate across Vercel instances, and plaintext identities are unnecessary.
+- Consequence: Protected surfaces fail closed when rate-limit storage is unavailable. The CSP retains the inline allowances required by the current Next.js setup.
 
-## Pending decisions
+## ADR-020: Controlled production administration
 
-| ID | Decision | Needed by |
-| --- | --- | --- |
-| P-005 | Hosted-demo contact retention/redaction | Task 13/15 |
-| P-006 | Monitoring/error-reporting provider | Task 13/15 |
+- Status: Accepted
+- Decision: Provision production administrators through a confirmed one-time command that only creates a new active account.
+- Rationale: Automatic seeds and shared credentials are unsafe for bootstrap and recovery.
+- Consequence: Duplicate emails are rejected and credentials are supplied only through the protected execution environment.
+
+## ADR-021: Minimal settings bootstrap
+
+- Status: Accepted
+- Decision: Insert the RestaurantSettings singleton through an idempotent migration when it is absent.
+- Rationale: A clean deployment requires settings but must not depend on the development seed.
+- Consequence: The migration does not overwrite settings or create catalog, user, order, or credential data.
+
+## ADR-022: Supabase connection split
+
+- Status: Accepted
+- Decision: Use Supabase PostgreSQL as the hosted database. Application traffic uses the Transaction Pooler through DATABASE_URL; Prisma CLI and migrations use the Session Pooler through DIRECT_URL.
+- Rationale: Serverless application traffic and administrative migration sessions have different connection behavior.
+- Consequence: Environments that run Prisma CLI commands provide DIRECT_URL. Runtime environments provide DATABASE_URL. Supabase Auth and client libraries are not part of the application.
+
+## ADR-023: Guarded production demo catalog
+
+- Status: Accepted
+- Decision: Use a separately confirmed catalog bootstrap that performs create-only upserts through DIRECT_URL in one transaction.
+- Rationale: The development seed updates settings and matching catalog records, which is not suitable for an established hosted database.
+- Consequence: The command creates missing fictional catalog records and leaves matching records, settings, users, credentials, and orders unchanged.
+
+## Open decisions
+
+| Topic | Required before |
+| --- | --- |
+| Guest contact-data retention and redaction | Public traffic |
+| Monitoring/error-reporting provider and alert ownership | Public launch |

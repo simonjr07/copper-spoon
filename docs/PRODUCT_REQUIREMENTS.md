@@ -1,119 +1,110 @@
 # Product Requirements
 
-## 1. Product statement
+## Product overview
 
-Copper Spoon is a fictional, internationally neutral restaurant ordering system for one modern restaurant. It demonstrates a credible customer transaction flow and the operational work that follows an order. It is a portfolio product, but its data model, authorization, validation, testing, and deployment practices should resemble a production system.
+Copper Spoon is a fictional ordering and restaurant-operations system for one restaurant. It demonstrates a complete guest transaction and the operational work that follows an order.
 
-## 2. Goals
+The product is a portfolio application, but its data model, authorization, validation, testing, and deployment practices follow production-oriented standards.
 
-- Let a guest discover food and place a pickup or delivery order comfortably on a phone.
-- Preserve an accurate, immutable commercial record of every submitted order.
-- Let restaurant staff triage and progress incoming orders with clear state and feedback.
-- Let administrators control the menu, staff, settings, and basic operational reporting.
-- Demonstrate secure full-stack engineering without depending on real payments or real customer data.
+## Goals
 
-## 3. Non-goals
+- Let guests browse a menu and place pickup or delivery orders on mobile devices.
+- Preserve an accurate historical record of every submitted order.
+- Give staff a clear workflow for reviewing and progressing orders.
+- Give administrators control over the catalog, staff accounts, and operational reporting.
+- Demonstrate secure full-stack engineering without real payments or real customer data.
 
-- Multiple restaurants or marketplace discovery
-- Real payment authorization, capture, refunds, or stored card data
-- Customer registration, profiles, saved addresses, or order history
-- Driver dispatch, GPS tracking, route planning, or delivery marketplaces
-- Loyalty, gift cards, reservations, table service, inventory, or kitchen hardware integration
-- Localization, multi-currency ordering, taxes by jurisdiction, or production email/SMS in the initial release
+## Users
 
-## 4. Users and permissions
+### Guest
 
-### Guest customer
-
-A guest can browse, search, filter, customize items, manage a cart, provide contact/fulfilment information, select a simulated payment method, submit an order, and view that order through a non-enumerable tracking identifier. No customer account is required.
+Guests can browse the menu, configure items, maintain a cart, submit pickup or delivery details, and track an order with a public code. No customer account is required.
 
 ### Staff
 
-A staff member can sign in, view all restaurant orders and menu information, open order details, and apply permitted order-status transitions. Staff cannot administer accounts or modify protected restaurant configuration.
+Active STAFF users can view dashboard analytics, work with the order queue, open operational order details, apply permitted status changes, and read the complete catalog.
 
 ### Administrator
 
-An administrator has staff permissions plus category/menu management, sold-out controls, staff account management, restaurant settings, and analytics access.
+Active ADMIN users have staff capabilities plus category, menu, option, and staff-account management. Restaurant settings are stored in the database; a settings-editing interface is outside the current release.
 
-There is no public staff registration. Staff accounts are provisioned by a controlled administrative process.
+## Functional scope
 
-## 5. Functional requirements
+### Public ordering
 
-### Public experience
+- Published menu browsing, search, and category filtering
+- Required and optional item choices
+- Browser-persisted cart
+- Pickup and delivery checkout
+- Simulated payment choices
+- Server-authoritative pricing and availability checks
+- Public confirmation and status tracking
 
-- Home page communicates the restaurant proposition and routes customers to the menu.
-- Menu groups available items by active category and supports text search and useful filters.
-- Menu item detail shows description, price, availability, and option groups.
-- Required and optional choices enforce configured minimum/maximum selections.
-- Cart supports add, remove, quantity change, option display, line totals, and a server-authoritative checkout review.
-- Checkout collects name, email, phone, optional order notes, and fulfilment details.
-- Pickup requires no delivery address; delivery requires the configured address fields and availability checks.
-- Payment selection is restricted to `PAY_ON_PICKUP`, `PAY_ON_DELIVERY`, and `DEMO_CARD`, subject to fulfilment compatibility.
-- Successful creation returns a human-readable order number and a non-enumerable status link.
-- Status view shows order number, fulfilment type, submitted items/totals, current status, and timestamps without exposing unnecessary contact data.
-- Unavailable or changed items/options are detected during checkout and produce an actionable correction response.
+### Restaurant operations
 
-### Restaurant dashboard
+- Credentials authentication
+- Status counts, recent orders, seven-day activity, fulfilment mix, and popular items
+- Searchable and filterable order queue
+- Controlled status transitions with audit events
+- Category, item, option, publication, availability, and archive management
+- Staff account creation, role/status management, and password replacement
 
-- Credentials login rejects disabled users and establishes a secure session.
-- Overview shows useful order counts and recent operational activity.
-- Incoming orders can be filtered by status and opened for full detail.
-- Status changes follow the permitted state machine and create an audit event.
-- Admins can create, edit, order, activate, and deactivate categories.
-- Admins can create and edit menu items, prices, options, and availability.
-- Sold-out changes are quick to apply and immediately affect customer ordering.
-- Admins can edit single-restaurant settings and fulfilment/payment availability.
-- Admins can create staff accounts, assign roles, disable accounts, and initiate password replacement through an explicit safe process.
-- Analytics provide basic order count and revenue-like totals from non-cancelled demo orders for selected periods.
+## Out of scope
 
-## 6. Order lifecycle
+- Multiple restaurants or marketplace discovery
+- Real payment processing or stored card data
+- Customer accounts, saved addresses, or order history
+- Driver dispatch or GPS tracking
+- Loyalty, gift cards, reservations, inventory, or kitchen hardware
+- Production email or SMS notifications
+- Multi-currency ordering and jurisdiction-specific tax calculation
 
-Supported statuses are `PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `COMPLETED`, and `CANCELLED`.
+## Order lifecycle
 
-Default forward flow:
+Supported statuses are PENDING, CONFIRMED, PREPARING, READY, COMPLETED, and CANCELLED.
 
-```text
+~~~text
 PENDING -> CONFIRMED -> PREPARING -> READY -> COMPLETED
-    |          |            |          |
-    +----------+------------+----------+-> CANCELLED
-```
+    |          |            |
+    +----------+------------+-> CANCELLED
+~~~
 
-`COMPLETED` and `CANCELLED` are terminal. Cancellation permissions and late-stage confirmation prompts will be finalized with the restaurant-order-management task. Every transition must be server-authorized, transactionally persisted, and auditable.
+Normal processing advances one step at a time. COMPLETED and CANCELLED are terminal. STAFF may cancel PENDING or CONFIRMED orders; ADMIN may also cancel PREPARING orders. Every cancellation requires a reason.
 
-## 7. Critical business rules
+## Business rules
 
-- All money is represented as integer minor units with an explicit ISO 4217 currency code.
-- The server recalculates prices and totals from current active menu data during checkout; client totals are advisory only.
-- Once created, each order item snapshots its item name and unit price, and each selected option snapshots its name and price adjustment.
-- Historical order displays and analytics use order snapshots/totals, never current menu pricing.
-- An order is created atomically with its items, selected options, totals, and initial status event.
-- Menu records referenced by orders are archived/disabled rather than destructively removed.
-- The restaurant has one settings record and one active ordering currency for the initial release.
-- Public demo data is fictional and must not resemble credentials or real customer records.
+- Money is stored as integer minor units with an ISO 4217 currency code.
+- Checkout recalculates prices from current database records.
+- Cart names, prices, totals, and availability are advisory.
+- Order items and selected options store immutable names and prices.
+- Historical views and analytics use snapshots and persisted totals.
+- Order creation writes the order, items, options, totals, and initial event atomically.
+- Catalog records are unpublished, disabled, or archived instead of being deleted from normal workflows.
+- The restaurant has one settings record and one active ordering currency.
+- Demo data is fictional and does not represent real credentials or customer records.
 
-## 8. Quality attributes
+## Quality requirements
 
-- Mobile-first and usable from 320 px upward; dashboard remains usable on tablet and desktop.
-- Keyboard-operable controls, semantic landmarks, visible focus, labelled errors, sufficient contrast, and reduced-motion respect.
-- Protected mutations perform authentication, authorization, and validation at the server boundary.
-- Common menu/status reads should feel immediate; target p75 LCP under 2.5 seconds on the deployed public menu after optimization.
-- Failures must not create partial orders, disclose secrets, or expose stack traces to users.
-- Structured logs must exclude passwords, secrets, raw session tokens, and unnecessary customer data.
+- Public flows work from 320 px through desktop widths.
+- Forms support keyboard operation, clear labels, visible focus, and associated errors.
+- Protected operations authenticate, authorize, and validate at the server boundary.
+- Public responses expose only fields required for their use case.
+- Failures cannot create partial orders or expose stack traces, secrets, or database details.
+- Logs exclude passwords, tokens, connection strings, and unnecessary customer data.
+- The hosted public menu targets a p75 LCP below 2.5 seconds after deployment and measurement.
 
-## 9. Success criteria
+## Success criteria
 
-- A first-time guest can place a valid demo order on mobile without assistance.
-- A staff user can move that order through the valid lifecycle and the public status reflects it.
-- An admin price change does not alter the historical order.
-- Role restrictions are covered by automated tests and cannot be bypassed by calling server endpoints directly.
-- A fresh contributor can run the project and all quality gates using repository documentation.
+- A guest can complete a fictional pickup or delivery order on mobile.
+- A staff member can progress the order through the supported lifecycle.
+- Public tracking reflects status changes without exposing private data.
+- Catalog changes do not alter historical orders.
+- Direct route or action access cannot bypass role restrictions.
+- A new developer can run the project and its quality checks from the documentation.
 
-## 10. Open product decisions
+## Open operational decisions
 
-- Default currency, delivery fee policy, and service radius/message
-- Whether staff may cancel after `PREPARING`, or whether that becomes admin-only
-- Whether menu dietary labels are a controlled list or free-form tags
-- Demo-card interaction depth (simple simulated success is recommended)
-- Retention period and redaction approach for hosted-demo guest contact data
-
-These decisions do not block Task 2's database foundation where nullable/configurable fields can preserve options.
+- Guest contact-data retention and redaction schedule
+- Monitoring and error-reporting provider
+- Alert ownership
+- Whether restaurant settings need an admin interface in a future release
