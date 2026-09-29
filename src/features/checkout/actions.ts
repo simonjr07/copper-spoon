@@ -6,6 +6,8 @@ import {
 } from "@/features/checkout/checkout";
 import { createAuthoritativeOrder } from "@/features/checkout/order-service";
 import { prismaOrderRepository } from "@/server/orders/order-repository";
+import { logOperationalError } from "@/server/observability/log";
+import { checkRequestRateLimit } from "@/server/security/rate-limit";
 
 export type CheckoutActionState = {
   status?: "success";
@@ -18,6 +20,21 @@ export async function submitOrderAction(
   _previousState: CheckoutActionState,
   formData: FormData,
 ): Promise<CheckoutActionState> {
+  try {
+    const rateLimit = await checkRequestRateLimit("CHECKOUT");
+
+    if (!rateLimit.allowed) {
+      return {
+        message: "Too many order attempts. Please wait a few minutes and try again.",
+      };
+    }
+  } catch (error) {
+    logOperationalError("checkout.rate_limit_unavailable", error);
+    return {
+      message: "Checkout is temporarily unavailable. Please try again later.",
+    };
+  }
+
   let cart: unknown = null;
 
   try {
@@ -69,6 +86,8 @@ export async function submitOrderAction(
         fieldErrors: { cart: [error.message] },
       };
     }
+
+    logOperationalError("checkout.order_creation_failed", error);
 
     return {
       message: "We could not place your order. Nothing was charged; please try again.",

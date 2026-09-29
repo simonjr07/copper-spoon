@@ -156,6 +156,8 @@ Branch: `chore/hardening`
 - Complete keyboard/screen-reader/contrast review and run performance profiling on representative routes.
 - Record residual risks and remediation.
 
+Status: implemented for repository hardening. Durable HMAC-keyed PostgreSQL rate limits protect login, checkout, and public order lookup; security headers/CSP, sanitized operational errors, bounded runtime pooling, explicit production admin provisioning/recovery, migration/docs, and focused tests are present. Existing authorization, validation, DTO privacy, transaction, accessibility, SEO, and performance controls were audited. Hosted retention/purge ownership, monitoring provider, production-like migration rehearsal, manual assistive-technology checks, and measured deployed performance remain Task 15 release evidence and require owner infrastructure decisions.
+
 Depends on: feature-complete flows.
 
 ## 14. Testing and CI/CD

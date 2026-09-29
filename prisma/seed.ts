@@ -391,8 +391,8 @@ async function main() {
 }
 
 main()
-  .catch((error: unknown) => {
-    console.error("Failed to seed the local development database.", error);
+  .catch(() => {
+    console.error("Failed to seed the local development database; details were withheld.");
     process.exitCode = 1;
   })
   .finally(async () => {

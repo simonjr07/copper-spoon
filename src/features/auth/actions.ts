@@ -4,6 +4,8 @@ import { AuthError } from "next-auth";
 
 import { signIn, signOut } from "@/auth";
 import { loginCredentialsSchema } from "@/features/auth/schemas";
+import { logOperationalError } from "@/server/observability/log";
+import { checkRequestRateLimit } from "@/server/security/rate-limit";
 
 export type LoginActionState = {
   message?: string;
@@ -17,6 +19,24 @@ export async function loginAction(
   _previousState: LoginActionState,
   formData: FormData,
 ): Promise<LoginActionState> {
+  try {
+    const rateLimit = await checkRequestRateLimit(
+      "LOGIN",
+      String(formData.get("email") ?? ""),
+    );
+
+    if (!rateLimit.allowed) {
+      return {
+        message: "Too many sign-in attempts. Try again in a few minutes.",
+      };
+    }
+  } catch (error) {
+    logOperationalError("auth.login_rate_limit_unavailable", error);
+    return {
+      message: "Sign in is temporarily unavailable. Please try again later.",
+    };
+  }
+
   const parsed = loginCredentialsSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),

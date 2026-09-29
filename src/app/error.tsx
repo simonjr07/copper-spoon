@@ -1,15 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 
 import { PublicHeader } from "@/components/public-header";
 
-export default function PublicError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
+export default function PublicError({ reset }: { reset: () => void }) {
   return (
     <>
       <PublicHeader />

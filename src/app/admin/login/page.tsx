@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/features/auth/login-form";
+import { privateRouteRobots } from "@/lib/seo";
 import { getActiveUser } from "@/server/auth/authorization";
 
 export const metadata: Metadata = {
   title: "Staff sign in | Copper Spoon",
   description: "Sign in to the private Copper Spoon restaurant workspace.",
-  robots: { index: false, follow: false },
+  robots: privateRouteRobots,
 };
 
 export default async function AdminLoginPage() {

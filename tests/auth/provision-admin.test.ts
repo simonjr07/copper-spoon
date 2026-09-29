@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  provisionAdmin,
   provisionDevelopmentAdmin,
   type AdminProvisionRepository,
 } from "@/server/auth/provision-admin";
@@ -37,7 +38,7 @@ describe("development admin provisioning", () => {
         { ...validEnvironment, nodeEnv: "production" },
         repository,
       ),
-    ).rejects.toThrow("only when NODE_ENV=development");
+    ).rejects.toThrow("requires NODE_ENV=development");
     expect(repository.findByEmail).not.toHaveBeenCalled();
     expect(repository.createAdmin).not.toHaveBeenCalled();
   });
@@ -78,6 +79,43 @@ describe("development admin provisioning", () => {
     expect(result.role).toBe("ADMIN");
     expect(result.status).toBe("ACTIVE");
     expect(repository.createAdmin).toHaveBeenCalledOnce();
+
+    const createInput = vi.mocked(repository.createAdmin).mock.calls[0]?.[0];
+    expect(createInput?.email).toBe("admin@copperspoon.example");
+    expect(createInput?.passwordHash).not.toBe(validEnvironment.password);
+    expect(bcrypt.getRounds(createInput?.passwordHash ?? "")).toBe(12);
+  });
+
+  it("refuses production provisioning without the exact confirmation", async () => {
+    const repository = createRepository();
+
+    await expect(
+      provisionAdmin(
+        {
+          ...validEnvironment,
+          nodeEnv: "production",
+          mode: "production",
+          confirmation: "not-confirmed",
+        },
+        repository,
+      ),
+    ).rejects.toThrow("exact confirmation value");
+    expect(repository.findByEmail).not.toHaveBeenCalled();
+    expect(repository.createAdmin).not.toHaveBeenCalled();
+  });
+
+  it("creates a production admin only after explicit confirmation", async () => {
+    const repository = createRepository();
+
+    await provisionAdmin(
+      {
+        ...validEnvironment,
+        nodeEnv: "production",
+        mode: "production",
+        confirmation: "CREATE_PRODUCTION_ADMIN",
+      },
+      repository,
+    );
 
     const createInput = vi.mocked(repository.createAdmin).mock.calls[0]?.[0];
     expect(createInput?.email).toBe("admin@copperspoon.example");

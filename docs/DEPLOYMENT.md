@@ -28,8 +28,10 @@ Public portfolio application and isolated demo database. It is not a real restau
 Expected server-only variables:
 
 - `DATABASE_URL` — pooled runtime PostgreSQL connection as supported by the selected Prisma/Neon setup
+- `DATABASE_POOL_MAX` — per-instance application pool ceiling; defaults to `5` and must be budgeted against the Neon plan and Vercel concurrency
 - A direct migration URL if the current Prisma/Neon architecture requires it
 - `AUTH_SECRET` — high-entropy environment-specific secret
+- `RATE_LIMIT_SECRET` — separate random HMAC key of at least 32 characters (falls back to `AUTH_SECRET`, but separation is preferred)
 - `AUTH_URL` or current Auth.js host-trust configuration where required
 
 Public variables are introduced only for values safe to freeze into a browser bundle. Secrets must never use the `NEXT_PUBLIC_` prefix.
@@ -57,12 +59,26 @@ Application/schema changes should be expand-and-contract compatible when a rolli
 - Commit migrations; never use ad-hoc production schema pushes.
 - Review migration SQL for destructive/locking operations and take a restore point when risk warrants it.
 - Use least-privilege application credentials and separate migration authority if the platform supports it.
-- Confirm connection pooling and serverless connection limits with current official Prisma and Neon guidance.
+- Use the Neon pooled endpoint for the application runtime, keep the pool small, and budget total connections across concurrent Vercel instances. Run `prisma migrate deploy` from one controlled job using the connection form approved for migrations; never let every application instance migrate at startup.
 - Seed production demo content through an explicit fictional-data process. Never auto-create an admin with a committed password.
 
 ## 6. Admin provisioning
 
-Production admin creation requires a one-time controlled command or protected job that accepts the email/password through secret input, hashes it, reports only the created identity, and refuses unsafe duplicate behavior. Rotate/remove temporary provisioning access after use. Never place a production password in seed files, shell history, CI logs, or the repository.
+Production admin creation and recovery use the same explicit command from a protected one-time job:
+
+```text
+NODE_ENV=production
+ADMIN_PROVISION_MODE=production
+ADMIN_PROVISION_CONFIRM=CREATE_PRODUCTION_ADMIN
+ADMIN_PROVISION_NAME=<injected secret input>
+ADMIN_PROVISION_EMAIL=<new unique address>
+ADMIN_PROVISION_PASSWORD=<injected secret input>
+npm run admin:provision
+```
+
+The command validates a strong password, hashes with bcrypt cost 12, creates only an active admin, prints only the normalized email, and refuses duplicate addresses rather than mutating them. Recovery creates a new unique admin, after which another admin may safely repair account state through the application. Remove every temporary variable/job secret immediately. Never place production credentials in seed files, `.env.example`, shell history, build logs, or the repository.
+
+The release order is: configure secrets, run `npm ci`/generate, apply migrations once, run the explicit fictional seed only if approved, provision the initial admin once, deploy the application, then execute smoke tests. The new rate-limit migration is a hard prerequisite because protected public actions fail closed without it.
 
 ## 7. Health, monitoring, and recovery
 

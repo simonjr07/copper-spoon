@@ -15,7 +15,19 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL is required to initialize Prisma Client.");
   }
 
-  const adapter = new PrismaPg({ connectionString });
+  const configuredPoolMax = Number(process.env.DATABASE_POOL_MAX ?? "5");
+  const max =
+    Number.isInteger(configuredPoolMax) &&
+    configuredPoolMax >= 1 &&
+    configuredPoolMax <= 20
+      ? configuredPoolMax
+      : 5;
+  const adapter = new PrismaPg({
+    connectionString,
+    max,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 10_000,
+  });
 
   return new PrismaClient({ adapter });
 }

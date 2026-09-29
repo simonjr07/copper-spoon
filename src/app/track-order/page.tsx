@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 
 import { PublicHeader } from "@/components/public-header";
 import { normalizePublicOrderCode } from "@/features/order-status/order-status";
+import { privateRouteRobots } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Track an order | Copper Spoon",
   description: "Open a fictional Copper Spoon order using its public order code.",
-  robots: { index: false, follow: false },
+  robots: privateRouteRobots,
 };
 
 type TrackOrderPageProps = {

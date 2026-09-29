@@ -74,6 +74,7 @@ PowerShell:
 
 ```powershell
 $env:NODE_ENV = "development"
+$env:ADMIN_PROVISION_MODE = "development"
 $env:ADMIN_PROVISION_NAME = "Fictional Demo Admin"
 $env:ADMIN_PROVISION_EMAIL = "admin@copperspoon.example"
 $env:ADMIN_PROVISION_PASSWORD = "choose-a-unique-local-password"
@@ -81,7 +82,11 @@ npm run admin:provision
 Remove-Item Env:ADMIN_PROVISION_PASSWORD
 ```
 
-The password must be 12–72 UTF-8 bytes and contain a letter, number, and symbol. The command uses bcrypt cost 12, creates an `ACTIVE` `ADMIN`, refuses to run outside development, and refuses to change an existing account with the same normalized email. It never prints the password and is never run automatically.
+The password must be 12–72 UTF-8 bytes and contain a letter, number, and symbol. The command uses bcrypt cost 12, creates an `ACTIVE` `ADMIN`, enforces the selected environment, and refuses to change an existing account with the same normalized email. It never prints the password and is never run automatically.
+
+For a production bootstrap or recovery, inject `NODE_ENV=production`, `ADMIN_PROVISION_MODE=production`, `ADMIN_PROVISION_CONFIRM=CREATE_PRODUCTION_ADMIN`, and the three credential values only into a one-time protected job or shell, run `npm run admin:provision`, then remove them. Recovery creates a new uniquely addressed admin; it never resets or mutates an existing account. Do not store these values in `.env.example`, VCS, shell history, or build logs.
+
+Hosted runtime configuration additionally requires a random `RATE_LIMIT_SECRET` of at least 32 characters and a conservative `DATABASE_POOL_MAX` (default `5`). Apply all migrations before serving traffic because login, checkout, and order lookup fail closed if the durable rate-limit table is unavailable.
 
 ## Database commands
 
